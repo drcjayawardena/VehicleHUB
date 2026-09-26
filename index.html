@@ -76,6 +76,13 @@
     nav button.on { color: #fff; border-bottom-color: #6aa5ff; font-weight: 600; }
 
     main { padding: 16px; max-width: 1200px; margin: 0 auto; }
+    .fbnav { display: flex; align-items: center; gap: 10px; color: #cfd9e6; text-decoration: none; padding: 10px 12px;
+      font-size: 14px; white-space: nowrap; border-radius: 6px; }
+    .fbnav:hover { color: #fff; background: rgba(24,119,242,.25); }
+    .fbnav .ic { color: #6aa5ff; }
+    .fblogin { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 4px; padding: 9px;
+      border-radius: 8px; background: #e7f0fe; color: #1877f2; font-weight: 600; font-size: 14px; text-decoration: none; }
+    .fblogin:hover { background: #d6e6fd; }
 
     /* ---------- Desktop: left sidebar ---------- */
     @media (min-width: 900px) {
@@ -89,6 +96,7 @@
         padding: 11px 12px; font-size: 15px; width: 100%; }
       nav button:hover { background: rgba(255,255,255,.08); color: #fff; }
       nav button.on { background: rgba(255,255,255,.12); border-left-color: #6aa5ff; }
+      .fbnav { margin-top: auto; padding: 11px 12px 11px 15px; font-size: 15px; border-top: 1px solid rgba(255,255,255,.12); border-radius: 0; }
       main { margin-left: 210px; max-width: none; padding: 20px 28px; }
       main > * { max-width: 1200px; }
     }
@@ -399,7 +407,8 @@ const ICONS = {
   external: '<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>',
   approve: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/>',
   ban: '<circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>',
-  newItem: '<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>'
+  newItem: '<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>',
+  facebook: '<path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/>'
 };
 const ic = (name, cls) => '<svg class="ic' + (cls ? ' ' + cls : '') + '" viewBox="0 0 24 24" aria-hidden="true">' + (ICONS[name] || '') + '</svg>';
 /** Status values may contain symbols (e.g. "Deal ✅") — show them as plain words. */
@@ -835,7 +844,7 @@ async function boot() {
   applyInit(r);
 }
 
-const APP_VERSION = '3.1';   // must match APP.VERSION in Code.gs
+const APP_VERSION = '3.2';   // must match APP.VERSION in Code.gs
 
 function applyInit(r) {
   S.user = r.user; S.lists = r.lists; S.master = r.master;
@@ -872,6 +881,7 @@ function renderLogin() {
       <div class="ok" id="lg_ok"></div>
       <button class="btn primary big" id="lg_btn">Login</button>
       <div id="lg_reg" style="text-align:center;display:none">New officer? <button type="button" class="link" onclick="renderRegister()">Create an account</button></div>
+      <a class="fblogin" href="${FACEBOOK_URL}" target="_blank" rel="noopener">${ic('facebook')} Follow VehicleHub on Facebook</a>
     </form></div>`;
   $('lg_u').focus();
   google.script.run.withSuccessHandler(open => { if (open && $('lg_reg')) $('lg_reg').style.display = ''; }).registrationOpen();
@@ -951,6 +961,9 @@ const TABS = [
   ['settings', 'settings', 'Settings']
 ];
 
+// VehicleHub Facebook page (split so no "//" appears inside a template literal)
+const FACEBOOK_URL = 'https:/' + '/www.facebook.com/profile.php?id=61593573333056';
+
 function renderShell() {
   $('app').innerHTML = `
     <header>
@@ -959,7 +972,8 @@ function renderShell() {
         <div class="who"><span class="uname">${ic('user')} <span id="unameText">${esc(S.user.full_name)}</span></span><button onclick="logout()">${ic('logout')} Logout</button></div>
       </div>
       <nav id="nav">${TABS.filter(t => !t[3] || S.user.role === 'admin').map(t =>
-        `<button data-v="${t[0]}" onclick="go('${t[0]}')">${ic(t[1])}<span>${t[2]}</span><em class="navcount" id="nc_${t[0]}"></em></button>`).join('')}</nav>
+        `<button data-v="${t[0]}" onclick="go('${t[0]}')">${ic(t[1])}<span>${t[2]}</span><em class="navcount" id="nc_${t[0]}"></em></button>`).join('')}
+        <a class="fbnav" href="${FACEBOOK_URL}" target="_blank" rel="noopener">${ic('facebook')}<span>Facebook</span></a></nav>
     </header>
     <main id="main"></main>
     <div id="verwarn" class="verwarn" style="display:none"></div>`;
@@ -1110,6 +1124,7 @@ function viewBuyerForm() {
         ${id ? sel('b', 'status', 'Status', S.lists.BUYER_STATUS, b.status) : ''}
 
         <div class="full row"><button class="btn green big" id="b_save">${ic('save')} Save & view matches</button></div>
+        ${id && S.user.role === 'admin' ? `<div class="full row"><button type="button" class="btn red" onclick="deleteRecord('buyer','${esc(id)}')">${ic('trash')} Delete this buyer</button></div>` : ''}
       </form>
     </div>
     <div id="afterSave"></div>`);
@@ -1135,6 +1150,18 @@ async function saveBuyer(e) {
   toast('Saved — ' + r.id);
   S.lastMatches = r.matches;
   go('results', { kind: 'buyer', id: r.id });   // hide the call details, show only the matches
+}
+
+/** Admin: delete a buyer / vehicle and all of its matches. */
+async function deleteRecord(kind, id) {
+  const what = kind === 'buyer' ? 'buyer' : 'vehicle';
+  const extra = kind === 'buyer' ? '' : ' Its photos will be moved to the Google Drive trash.';
+  if (!confirm(`Delete ${what} ${id} permanently?\n\nAll matches of this ${what} will be deleted too.${extra}\n\nThis cannot be undone.`)) return;
+  const r = await call('deleteRecord', { kind: kind, id: id });
+  if (!r) return;
+  delete S.rec[id];
+  toast(`Deleted ${id} (${r.matchesDeleted} match${r.matchesDeleted === 1 ? '' : 'es'} removed)`);
+  go(kind === 'buyer' ? 'buyers' : 'vehicles');
 }
 
 /* ============================================================
@@ -1176,6 +1203,7 @@ function viewVehicleForm() {
           <span class="muted">Choose up to 10 photos. When you press Save, each photo opens so you can blur the number plate before it is uploaded.</span>
         </div>
         <div class="full row"><button class="btn green big" id="v_save">${ic('save')} Save & view matches</button></div>
+        ${id && S.user.role === 'admin' ? `<div class="full row"><button type="button" class="btn red" onclick="deleteRecord('vehicle','${esc(id)}')">${ic('trash')} Delete this vehicle</button></div>` : ''}
       </form>
     </div>
     <div id="afterSave"></div>`);
