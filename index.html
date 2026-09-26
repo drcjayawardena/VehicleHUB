@@ -52,6 +52,19 @@
     .login-logo.small { max-width: 200px; }
     .grid.wide { grid-template-columns: repeat(auto-fill, minmax(460px, 1fr)); }
     .login .link { font: inherit; }
+    .deal { border-left: 4px solid var(--accent); display: flex; flex-direction: column; gap: 10px; }
+    .deal .dh { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .deal .dh .ok { color: var(--accent); font-weight: 700; display: flex; align-items: center; gap: 6px; }
+    .deal .price { font-weight: 700; font-size: 17px; }
+    .deal .party { background: #f6f8fb; border-radius: 8px; padding: 8px 10px; }
+    .deal .party .lbl { font-size: 12px; color: var(--muted); margin-bottom: 2px; display: flex; align-items: center; gap: 5px; }
+    .verwarn { position: fixed; right: 16px; bottom: 16px; max-width: 420px; z-index: 60; background: #fff4e5;
+      color: #7a4d00; border: 1px solid #f3d9a4; border-radius: 12px; padding: 12px 14px; font-size: 14px;
+      gap: 10px; align-items: flex-start; box-shadow: 0 8px 24px rgba(0,0,0,.12); }
+    .verwarn .ic { color: #c77700; margin-top: 2px; }
+    .loaderr { text-align: center; padding: 40px 16px; grid-column: 1 / -1; color: var(--muted); }
+    .loaderr .ic { width: 40px; height: 40px; color: var(--bad); stroke-width: 1.6; }
+    .loaderr b { display: block; color: var(--text); margin: 10px 0 6px; font-size: 16px; }
     .approve-bar { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
     .btn.red { background: #fbe9e9; color: var(--bad); }
     .who { font-size: 13px; opacity: .85; display: flex; gap: 10px; align-items: center; }
@@ -390,6 +403,8 @@ const ICONS = {
 };
 const ic = (name, cls) => '<svg class="ic' + (cls ? ' ' + cls : '') + '" viewBox="0 0 24 24" aria-hidden="true">' + (ICONS[name] || '') + '</svg>';
 /** Status values may contain symbols (e.g. "Deal ✅") — show them as plain words. */
+const isDealStatus = s => String(s || '').replace(/[^A-Za-z0-9]/g, '').toLowerCase() === 'deal';
+const dealStatus = () => (S.lists.MATCH_STATUS || []).find(isDealStatus) || 'Deal ✅';
 const statusLabel = s => String(s == null ? '' : s).replace(/[^\p{L}\p{N}\s\-\/().,]/gu, '').replace(/\s+/g, ' ').trim();
 /** The brand logo is kept in a hidden <img> in the page body. */
 const logoSrc = id => { const el = document.getElementById(id); return el ? el.getAttribute('src') : ''; };
@@ -409,6 +424,22 @@ function toast(msg, bad) {
 }
 
 /** Server API call. On error, shows a toast and returns null. */
+/** If a page was still loading when a request failed, show the error with a retry button. */
+function showLoadError(msg) {
+  const main = $('main');
+  if (!main) return;
+  const holders = main.querySelectorAll('.loading, .skel');
+  if (!holders.length) return;
+  const box = document.createElement('div');
+  box.className = 'loaderr';
+  box.innerHTML = ic('alert') + '<b>Could not load this page</b><div>' + esc(msg) + '</div>' +
+    '<div style="margin-top:14px"><button class="btn primary" onclick="go(S.view, S.params)">' + ic('refresh') + ' Try again</button></div>';
+  const first = holders[0];
+  const parent = first.parentNode;
+  holders.forEach(h => h.remove());
+  parent.appendChild(box);
+}
+
 /* ---------- Network activity indicator ---------- */
 let netCount = 0;
 function netStart() { netCount++; const b = $('netbar'); if (b) b.classList.add('on'); }
@@ -428,7 +459,11 @@ function call(action, payload) {
         netEnd();
         const msg = String((err && err.message) || err);
         if (msg.indexOf('SESSION_EXPIRED') > -1) { toast('Session expired — please log in again', true); logout(true); }
-        else toast(msg.replace(/^Error:\s*/, '').replace(/^Exception:\s*/, ''), true);
+        else {
+          const clean = msg.replace(/^Error:\s*/, '').replace(/^Exception:\s*/, '');
+          toast(clean, true);
+          showLoadError(clean);
+        }
         resolve(null);
       })
       .api(S.token, action, payload || {});
@@ -800,10 +835,30 @@ async function boot() {
   applyInit(r);
 }
 
+const APP_VERSION = '3.1';   // must match APP.VERSION in Code.gs
+
 function applyInit(r) {
   S.user = r.user; S.lists = r.lists; S.master = r.master;
   renderShell();
+  checkVersions(r.versions);
   go('dashboard');
+}
+
+/** Warns clearly when the three files are from different updates. */
+function checkVersions(v) {
+  const msgs = [];
+  if (!v) msgs.push('<b>Code.gs</b> on Apps Script is out of date.');
+  else {
+    if (v.code !== APP_VERSION) msgs.push(v.code > APP_VERSION || !APP_VERSION
+      ? 'This page (<b>index.html</b>) is older than the server. Upload the latest index.html.'
+      : '<b>Code.gs</b> on Apps Script is out of date (server ' + esc(v.code) + ', page ' + APP_VERSION + ').');
+    if (v.matching !== v.code) msgs.push('<b>Matching.gs</b> on Apps Script is out of date — paste the latest Matching.gs.');
+  }
+  const box = $('verwarn');
+  if (!box) return;
+  box.innerHTML = msgs.length ? ic('alert') + '<div>' + msgs.join('<br>') +
+    '<br><span class="muted">After updating Apps Script files: Deploy → Manage deployments → Edit → New version → Deploy.</span></div>' : '';
+  box.style.display = msgs.length ? 'flex' : 'none';
 }
 
 function renderLogin() {
@@ -892,7 +947,7 @@ function logout(silent) {
  * ============================================================ */
 const TABS = [
   ['dashboard', 'home', 'Dashboard'], ['newcall', 'phone', 'New Call'], ['buyers', 'user', 'Buyers'],
-  ['vehicles', 'car', 'Vehicles'], ['matches', 'link', 'Matches'], ['approvals', 'approve', 'Approvals', 'admin'],
+  ['vehicles', 'car', 'Vehicles'], ['matches', 'link', 'Matches'], ['deals', 'award', 'Deals'], ['approvals', 'approve', 'Approvals', 'admin'],
   ['settings', 'settings', 'Settings']
 ];
 
@@ -906,7 +961,8 @@ function renderShell() {
       <nav id="nav">${TABS.filter(t => !t[3] || S.user.role === 'admin').map(t =>
         `<button data-v="${t[0]}" onclick="go('${t[0]}')">${ic(t[1])}<span>${t[2]}</span><em class="navcount" id="nc_${t[0]}"></em></button>`).join('')}</nav>
     </header>
-    <main id="main"></main>`;
+    <main id="main"></main>
+    <div id="verwarn" class="verwarn" style="display:none"></div>`;
 }
 
 function setMain(html) { $('main').innerHTML = html; }
@@ -918,7 +974,7 @@ function go(view, params) {
   window.scrollTo(0, 0);
   ({ dashboard: viewDashboard, newcall: viewNewCall, buyers: viewBuyers, vehicles: viewVehicles,
      matches: viewMatches, settings: viewSettings, buyerForm: viewBuyerForm, vehicleForm: viewVehicleForm,
-     results: viewResults, approvals: viewApprovals
+     results: viewResults, approvals: viewApprovals, deals: viewDeals
   })[view]();
 }
 
@@ -941,7 +997,7 @@ async function viewDashboard() {
       <div class="tile" onclick="go('vehicles')"><b>${s.availableVehicles}</b><span>${ic('car')} Available vehicles</span></div>
       <div class="tile" onclick="go('matches')"><b>${s.newMatches}</b><span>${ic('star')} New matches</span></div>
       <div class="tile" onclick="go('matches')"><b>${s.inProgress}</b><span>${ic('clock')} In progress</span></div>
-      <div class="tile"><b>${s.dealsThisMonth}</b><span>${ic('award')} Deals this month</span></div>
+      <div class="tile" onclick="go('deals')"><b>${s.dealsThisMonth}</b><span>${ic('award')} Deals this month</span></div>
     </div>
     <div class="row" style="margin-top:14px">
       <button class="btn primary big" onclick="go('newcall')">${ic('phone')} Add a new call</button>
@@ -1305,6 +1361,66 @@ function vehicleCard(v) {
 }
 
 /* ============================================================
+ *  CLOSED DEALS — full details
+ * ============================================================ */
+async function viewDeals() {
+  const month = S.params.month || '';
+  setMain(`<div class="toolbar">
+      <h2 style="margin:0;flex:1 1 auto">${ic('award', 'h')} Closed deals</h2>
+      <select id="d_month" onchange="go('deals',{month:this.value})" style="flex:0 1 220px"><option>Loading…</option></select>
+    </div>
+    <div class="tiles" id="d_sum"></div>
+    <div id="list" class="grid wide" style="margin-top:12px">${skeleton(3)}</div>`);
+  const r = await call('listDeals', { month });
+  if (!r || S.view !== 'deals') return;
+  const label = m => { if (m === 'all') return 'All time'; const d = new Date(m + '-01T00:00:00');
+    return d.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' }); };
+  const thisMonth = new Date(Date.now() + 5.5 * 3600e3).toISOString().slice(0, 7);
+  const months = [...new Set([thisMonth].concat(r.months))].sort().reverse();
+  $('d_month').innerHTML = months.map(m => `<option value="${m}" ${m === r.month ? 'selected' : ''}>${label(m)}</option>`).join('') +
+    `<option value="all" ${r.month === 'all' ? 'selected' : ''}>All time</option>`;
+  $('d_sum').innerHTML = `
+    <div class="tile"><b>${r.deals.length}</b><span>${ic('award')} Deals — ${esc(label(r.month))}</span></div>
+    <div class="tile"><b>${esc(r.total)}</b><span>${ic('tag')} Total value (Lakhs)</span></div>`;
+  r.deals.forEach(d => { if (d.vehicle && d.vehicle.vehicle_id) S.rec[d.vehicle.vehicle_id] = Object.assign(S.rec[d.vehicle.vehicle_id] || {}, d.vehicle); });
+  $('list').innerHTML = r.deals.map(dealCard).join('') ||
+    `<div class="empty">${ic('award')} No closed deals for ${esc(label(r.month))}</div>`;
+}
+
+function dealCard(d) {
+  const v = d.vehicle || {}, b = d.buyer;
+  const seller = v.masked
+    ? `<div class="party"><div class="lbl">${ic('shield')} Seller's officer</div><b>${esc(v.officer ? v.officer.name : '')}</b>
+         <div class="actions">${v.officer && v.officer.phone ? phoneBtns(v.officer.phone) : ''}</div></div>`
+    : `<div class="party"><div class="lbl">${ic('car')} Seller (owner)</div><b>${esc(v.owner_name || '-')}</b>
+         <div class="actions">${phoneBtns(v.owner_phone)}</div>
+         ${!v.mine && v.officer ? `<div class="muted">${ic('shield')} Officer: ${esc(v.officer.name)}</div>` : ''}</div>`;
+  const buyer = !b ? `<div class="party"><div class="lbl">${ic('user')} Buyer</div><span class="muted">Marked as sold directly — no buyer match recorded</span></div>`
+    : b.masked
+      ? `<div class="party"><div class="lbl">${ic('shield')} Buyer's officer</div><b>${esc(b.officer ? b.officer.name : '')}</b>
+           <div class="muted">Wanted: ${esc(wantName(b))} · Budget ${esc(lk(b.max_budget))}</div>
+           <div class="actions">${b.officer && b.officer.phone ? phoneBtns(b.officer.phone) : ''}</div></div>`
+      : `<div class="party"><div class="lbl">${ic('user')} Buyer · ${esc(b.buyer_id)}</div><b>${esc(b.name || '-')}</b>
+           <div class="muted">Wanted: ${esc(wantName(b))} · Budget ${esc(lk(b.max_budget))}${b.district ? ' · ' + esc(b.district) : ''}</div>
+           <div class="actions">${phoneBtns(b.phone)}</div>
+           ${!b.mine && b.officer ? `<div class="muted">${ic('shield')} Officer: ${esc(b.officer.name)}</div>` : ''}</div>`;
+  return `<div class="card deal">
+    <div class="dh"><span class="ok">${ic('check')} Deal closed</span>
+      <span class="muted">${ic('clock')} ${esc(d.closedAt)}${d.closedBy ? ' · by ' + esc(d.closedBy) : ''}</span></div>
+    <div class="vrow">${thumbHtml(v, true)}<div>
+      <div class="title" style="font-weight:600">${esc(carName(v) || '-')}</div>
+      <div class="price">${esc(lk(v.price))}</div>
+      <div class="sub">${[v.vehicle_id, v.vehicle_type, v.mileage ? v.mileage + ' km' : '', v.fuel, v.transmission, v.condition, v.color, v.district].filter(Boolean).map(esc).join(' · ')}</div>
+      ${d.score != null ? `<div class="muted">Match score ${esc(d.score)}%</div>` : ''}
+    </div></div>
+    ${seller}
+    ${buyer}
+    ${d.notes ? `<div class="sub">${ic('note')} ${esc(d.notes)}</div>` : ''}
+    <div class="actions">${photoLink(v)}</div>
+  </div>`;
+}
+
+/* ============================================================
  *  VEHICLE APPROVALS (admins)
  * ============================================================ */
 async function viewApprovals() {
@@ -1370,11 +1486,11 @@ async function viewMatches() {
       <button onclick="go('matches')">${ic('x')} Clear filter</button></div>` : ''}
     <div class="toolbar">
       <input id="m_q" placeholder="Search name, phone, model or ID" oninput="renderMatches()">
-      <select id="m_st" onchange="renderMatches()">${opts(S.lists.MATCH_STATUS, '', 'All statuses')}</select>
+      <select id="m_st" onchange="renderMatches()">${opts(S.lists.MATCH_STATUS, p.deals ? dealStatus() : '', 'All statuses')}</select>
       <select id="m_min" onchange="renderMatches()">
         <option value="0">Any score</option><option value="50" selected>50+</option>
         <option value="70">70+</option><option value="85">85+</option></select>
-      <label class="check"><input type="checkbox" id="m_closed" onchange="loadMatches()"> Include closed / rejected</label>
+      <label class="check"><input type="checkbox" id="m_closed" onchange="loadMatches()" ${p.deals ? 'checked' : ''}> Include closed / rejected</label>
       <button class="btn" onclick="refreshAll(this)">${ic('refresh')} Re-match all</button>
     </div>
     <div id="list" class="grid">${skeleton(4)}</div>`);
@@ -1448,7 +1564,7 @@ function matchCard(m, only) {
 
 async function saveMatch(id, btn) {
   const status = $('ms_' + id).value, notes = $('mn_' + id).value;
-  if (status === 'Deal ✅' && !confirm('Mark this as a deal? The buyer will be set to Bought and the vehicle to Sold.')) return;
+  if (isDealStatus(status) && !confirm('Mark this as a deal? The buyer will be set to Bought and the vehicle to Sold.')) return;
   btn.disabled = true;
   const r = await call('updateMatch', { matchId: id, status, notes });
   btn.disabled = false;
