@@ -835,7 +835,7 @@ async function boot() {
   applyInit(r);
 }
 
-const APP_VERSION = '3.1';   // must match APP.VERSION in Code.gs
+const APP_VERSION = '3.2';   // must match APP.VERSION in Code.gs
 
 function applyInit(r) {
   S.user = r.user; S.lists = r.lists; S.master = r.master;
@@ -1110,6 +1110,7 @@ function viewBuyerForm() {
         ${id ? sel('b', 'status', 'Status', S.lists.BUYER_STATUS, b.status) : ''}
 
         <div class="full row"><button class="btn green big" id="b_save">${ic('save')} Save & view matches</button></div>
+        ${id && S.user.role === 'admin' ? `<div class="full row"><button type="button" class="btn red" onclick="deleteRecord('buyer','${esc(id)}')">${ic('trash')} Delete this buyer</button></div>` : ''}
       </form>
     </div>
     <div id="afterSave"></div>`);
@@ -1135,6 +1136,18 @@ async function saveBuyer(e) {
   toast('Saved — ' + r.id);
   S.lastMatches = r.matches;
   go('results', { kind: 'buyer', id: r.id });   // hide the call details, show only the matches
+}
+
+/** Admin: delete a buyer / vehicle and all of its matches. */
+async function deleteRecord(kind, id) {
+  const what = kind === 'buyer' ? 'buyer' : 'vehicle';
+  const extra = kind === 'buyer' ? '' : ' Its photos will be moved to the Google Drive trash.';
+  if (!confirm(`Delete ${what} ${id} permanently?\n\nAll matches of this ${what} will be deleted too.${extra}\n\nThis cannot be undone.`)) return;
+  const r = await call('deleteRecord', { kind: kind, id: id });
+  if (!r) return;
+  delete S.rec[id];
+  toast(`Deleted ${id} (${r.matchesDeleted} match${r.matchesDeleted === 1 ? '' : 'es'} removed)`);
+  go(kind === 'buyer' ? 'buyers' : 'vehicles');
 }
 
 /* ============================================================
@@ -1176,6 +1189,7 @@ function viewVehicleForm() {
           <span class="muted">Choose up to 10 photos. When you press Save, each photo opens so you can blur the number plate before it is uploaded.</span>
         </div>
         <div class="full row"><button class="btn green big" id="v_save">${ic('save')} Save & view matches</button></div>
+        ${id && S.user.role === 'admin' ? `<div class="full row"><button type="button" class="btn red" onclick="deleteRecord('vehicle','${esc(id)}')">${ic('trash')} Delete this vehicle</button></div>` : ''}
       </form>
     </div>
     <div id="afterSave"></div>`);
