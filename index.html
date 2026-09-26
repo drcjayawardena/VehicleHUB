@@ -1,0 +1,1295 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Vehicle Match</title>
+  <meta name="theme-color" content="#1f3a5f">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon-192.png">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <style>
+    :root {
+      --bg: #f3f5f8; --card: #ffffff; --text: #1b2430; --muted: #687384; --line: #e2e6eb;
+      --primary: #1f3a5f; --primary-2: #2c5282; --accent: #2e7d5b; --wa: #1fae55;
+      --warn: #b86e00; --bad: #b23b3b; --buyer: #4c7ee8; --seller: #e0912f; --chip: #eef2f7;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; background: var(--bg); color: var(--text);
+      font: 15px/1.45 system-ui, -apple-system, "Segoe UI", "Noto Sans Sinhala", "Iskoola Pota", sans-serif; }
+    a { color: inherit; }
+    h2 { font-size: 17px; margin: 22px 0 10px; }
+    .muted { color: var(--muted); font-size: 13px; }
+
+    /* ---------- Header / nav ---------- */
+    header { background: var(--primary); color: #fff; position: sticky; top: 0; z-index: 10; }
+    .hbar { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; gap: 8px; }
+    .brand { font-weight: 700; font-size: 17px; }
+    .who { font-size: 13px; opacity: .85; display: flex; gap: 10px; align-items: center; }
+    .who button { background: rgba(255,255,255,.15); color: #fff; border: 0; border-radius: 6px; padding: 5px 10px; cursor: pointer; }
+    nav { display: flex; gap: 2px; overflow-x: auto; padding: 0 10px; scrollbar-width: none; }
+    nav::-webkit-scrollbar { display: none; }
+    nav button { background: none; border: 0; color: #cfd9e6; padding: 10px 12px; font-size: 14px; cursor: pointer;
+      white-space: nowrap; border-bottom: 3px solid transparent; }
+    nav button.on { color: #fff; border-bottom-color: #7fb3ff; font-weight: 600; }
+
+    main { padding: 16px; max-width: 1200px; margin: 0 auto; }
+
+    /* ---------- Desktop: left sidebar ---------- */
+    @media (min-width: 900px) {
+      header { position: fixed; top: 0; left: 0; bottom: 0; width: 210px; display: flex; flex-direction: column; }
+      .hbar { flex-direction: column; align-items: flex-start; padding: 18px 16px; gap: 10px;
+        border-bottom: 1px solid rgba(255,255,255,.12); }
+      .who { flex-direction: column; align-items: flex-start; gap: 8px; }
+      .who .uname { display: inline; }
+      nav { flex-direction: column; padding: 10px 8px; gap: 4px; overflow: visible; flex: 1; }
+      nav button { text-align: left; border-bottom: 0; border-left: 3px solid transparent; border-radius: 6px;
+        padding: 11px 12px; font-size: 15px; width: 100%; }
+      nav button:hover { background: rgba(255,255,255,.08); color: #fff; }
+      nav button.on { background: rgba(255,255,255,.12); border-left-color: #7fb3ff; }
+      main { margin-left: 210px; max-width: none; padding: 20px 28px; }
+      main > * { max-width: 1200px; }
+    }
+
+    /* ---------- Common ---------- */
+    .btn { border: 0; border-radius: 8px; padding: 9px 14px; font-size: 14px; cursor: pointer; text-decoration: none;
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px; background: var(--chip); color: var(--text); }
+    .btn:disabled { opacity: .55; cursor: wait; }
+    .btn.primary { background: var(--primary); color: #fff; }
+    .btn.green { background: var(--accent); color: #fff; }
+    .btn.wa { background: var(--wa); color: #fff; }
+    .btn.sm { padding: 6px 10px; font-size: 13px; }
+    .btn.big { padding: 14px 18px; font-size: 15px; flex: 1; }
+    .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px; }
+    .narrow { max-width: 760px; margin: 0 auto; }
+    .grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); }
+    .toolbar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; align-items: center; }
+    .toolbar input, .toolbar select { flex: 1 1 150px; min-width: 0; }
+    input, select, textarea { font: inherit; font-size: 15px; padding: 9px 10px; border: 1px solid var(--line);
+      border-radius: 8px; background: #fff; color: var(--text); width: 100%; }
+    input:focus, select:focus, textarea:focus { outline: 2px solid #a9c6f5; border-color: #7fa7e6; }
+    textarea { min-height: 60px; resize: vertical; }
+    label.f { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); }
+    label.f.req span::after { content: ' *'; color: var(--bad); }
+    .form { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+    .form .full { grid-column: 1 / -1; }
+    .sec { grid-column: 1 / -1; font-weight: 600; font-size: 13px; color: var(--primary-2); border-bottom: 1px solid var(--line);
+      padding-bottom: 4px; margin-top: 6px; }
+    .row { display: flex; gap: 8px; flex-wrap: wrap; }
+    .badge { font-size: 12px; padding: 2px 8px; border-radius: 99px; background: var(--chip); color: var(--primary); white-space: nowrap; }
+    .badge.ok { background: #e6f4ec; color: var(--accent); }
+    .badge.off { background: #f4e7e7; color: var(--bad); }
+    .empty, .loading { text-align: center; color: var(--muted); padding: 36px 0; grid-column: 1 / -1; }
+    .chipbar { display: flex; gap: 6px; align-items: center; margin-bottom: 10px; }
+    .chipbar .badge { font-size: 13px; padding: 4px 10px; }
+    .chipbar button { border: 0; background: none; cursor: pointer; color: var(--bad); font-size: 13px; }
+    .check { display: flex; gap: 6px; align-items: center; font-size: 13px; color: var(--muted); flex: 0 0 auto; }
+    .check input { width: auto; }
+
+    /* ---------- Stat tiles ---------- */
+    .tiles { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+    .tile { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; cursor: pointer; }
+    .tile b { display: block; font-size: 26px; line-height: 1.1; }
+    .tile span { font-size: 13px; color: var(--muted); }
+
+    /* ---------- Record cards ---------- */
+    .rec { display: flex; flex-direction: column; gap: 6px; }
+    .rec .top { display: flex; justify-content: space-between; gap: 8px; align-items: flex-start; }
+    .rec .title { font-weight: 600; }
+    .rec .sub { font-size: 13px; color: var(--muted); }
+    .rec .actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+    .rec.buyer { border-left: 4px solid var(--buyer); }
+    .rec.seller { border-left: 4px solid var(--seller); }
+
+    /* ---------- Match cards ---------- */
+    .match { display: flex; flex-direction: column; gap: 10px; }
+    .match .top { display: flex; justify-content: space-between; align-items: center; }
+    .score { font-weight: 700; font-size: 22px; }
+    .score.hi { color: var(--accent); } .score.mid { color: var(--warn); } .score.lo { color: var(--bad); }
+    .reasons { display: flex; gap: 4px; flex-wrap: wrap; }
+    .reasons span { font-size: 12px; background: #eef7f2; color: var(--accent); padding: 2px 7px; border-radius: 6px; }
+    .side { border-left: 3px solid var(--line); padding-left: 10px; }
+    .side.b { border-color: var(--buyer); } .side.s { border-color: var(--seller); }
+    .side h4 { margin: 0 0 2px; font-size: 12px; color: var(--muted); font-weight: 600; }
+    .side .main { font-weight: 600; }
+    .side .sub { font-size: 13px; color: var(--muted); }
+    .side .actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+    .medit { display: grid; grid-template-columns: 1fr auto; gap: 6px; }
+    .medit textarea { grid-column: 1 / -1; min-height: 42px; font-size: 14px; }
+    .medit select, .medit input { font-size: 14px; padding: 7px 8px; }
+    .meta { font-size: 12px; color: var(--muted); }
+    .officer { background: #f4f6fb; border-radius: 8px; padding: 8px 10px; margin-top: 6px; }
+    .officer .lbl { font-size: 12px; color: var(--muted); }
+    .officer .nm { font-weight: 600; }
+    .mine-tag { font-size: 11px; background: #e6f4ec; color: var(--accent); padding: 1px 6px; border-radius: 6px; margin-left: 4px; }
+    .utable { width: 100%; border-collapse: collapse; font-size: 14px; }
+    .utable td, .utable th { padding: 6px 4px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: middle; }
+    .utable input, .utable select { padding: 6px 8px; font-size: 14px; }
+    .utable select { min-width: 90px; }
+    .utable .check input { width: auto; }
+    .uwrap { overflow-x: auto; }
+    .photo-pick { display: flex; flex-direction: column; gap: 6px; }
+    /* ---------- Photo blur editor ---------- */
+    .pe-back { position: fixed; inset: 0; background: rgba(10,16,24,.82); z-index: 100; display: flex;
+      align-items: center; justify-content: center; padding: 12px; }
+    .pe { background: var(--card); border-radius: 12px; padding: 14px; width: min(960px, 100%); max-height: 100%;
+      display: flex; flex-direction: column; gap: 10px; overflow: auto; }
+    .pe h3 { margin: 0; font-size: 16px; }
+    .pe canvas { max-width: 100%; max-height: 68vh; align-self: center; touch-action: none; cursor: crosshair;
+      border-radius: 8px; background: #000; }
+    .pe .row { justify-content: flex-end; }
+    .gal-img { max-width: 100%; max-height: 70vh; align-self: center; border-radius: 8px; background: #000; min-height: 120px; }
+    .gal-bar { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .login .link { background: none; border: 0; color: var(--primary-2); cursor: pointer; font-size: 14px; text-decoration: underline; padding: 4px; }
+    .login .ok { color: var(--accent); font-size: 14px; }
+    .savedbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;
+      border-left: 4px solid var(--accent); margin-bottom: 4px; }
+    .savedbar .t { font-weight: 600; font-size: 16px; }
+    .savedbar .row { flex: 0 1 auto; }
+    .ext { background: #fff4e0; color: #7a4d00; }
+    .extbox { background: #fffaf0; border: 1px solid #f3e1bb; border-radius: 10px; padding: 10px 12px; margin-top: 12px; }
+    .extbox .lbl { font-size: 13px; color: #7a4d00; margin-bottom: 6px; }
+    .notice { background: #fff6e5; border: 1px solid #f3d9a4; color: #7a4d00; border-radius: 10px; padding: 10px 14px; margin-bottom: 14px; font-size: 14px; }
+
+    /* ---------- Login ---------- */
+    .login { max-width: 360px; margin: 12vh auto 0; padding: 0 16px; }
+    .login .card { padding: 24px; display: flex; flex-direction: column; gap: 12px; }
+    .login h1 { margin: 0; font-size: 22px; color: var(--primary); }
+    .err { color: var(--bad); font-size: 14px; min-height: 18px; }
+
+    .toast { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); background: #1b2430; color: #fff;
+      padding: 10px 16px; border-radius: 8px; font-size: 14px; opacity: 0; transition: opacity .2s; pointer-events: none;
+      z-index: 50; max-width: 90vw; text-align: center; }
+    .toast.show { opacity: 1; } .toast.bad { background: var(--bad); }
+
+    @media (max-width: 520px) {
+      main { padding: 12px; }
+      .grid { grid-template-columns: 1fr; }
+      .who .uname { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div id="app"><div class="loading">Loading…</div></div>
+  <script>
+    // Safety net: if anything goes wrong, show the error on the page instead of a blank screen.
+    window.addEventListener('error', function (e) {
+      if (window.__vmStarted) return; // only for start-up problems
+      var app = document.getElementById('app');
+      if (app) app.innerHTML = '<div style="max-width:640px;margin:10vh auto;padding:16px;background:#fff;border:1px solid #e2e6eb;border-radius:12px;font:14px system-ui">' +
+        '<b style="color:#b23b3b">⚠️ The app could not start.</b><br><br>' +
+        String(e.message || e.error || 'Unknown error').replace(/</g, '&lt;') +
+        (e.lineno ? ' (line ' + e.lineno + ')' : '') +
+        '<br><br>Usually this means <b>Index.html</b> / <b>index.html</b> was not copied completely. Copy the whole file again, save, and (for Apps Script) deploy a New version.</div>';
+    });
+  </script>
+
+  <script>
+    /* ============================================================
+     *  WEBSITE MODE (GitHub Pages)
+     *  Paste your Apps Script web app URL (ends with /exec) below.
+     *  Inside Apps Script this block is ignored automatically.
+     * ============================================================ */
+    window.VM_API_URL = 'https://script.google.com/macros/s/AKfycbxvYUTl0jYN8ZPDf_sVCPsUqe0-OOTKZdknXci2XK-ei2l_SP7k1pncmhfky9oL-9o6BA/exec';
+
+    (function () {
+      if (window.google && google.script && google.script.run) return; // running inside Apps Script
+      window.__vmWebsite = true;
+      // Same interface as google.script.run, but talks to the Apps Script API with fetch()
+      function runner(ok, fail) {
+        return new Proxy({}, {
+          get: function (_, name) {
+            if (name === 'withSuccessHandler') return function (f) { return runner(f, fail); };
+            if (name === 'withFailureHandler') return function (f) { return runner(ok, f); };
+            return function () {
+              var args = Array.prototype.slice.call(arguments);
+              var url = window.VM_API_URL;
+              if (!url || url.indexOf('/exec') < 0) {
+                if (fail) fail(new Error('API URL is not set. Open index.html and paste your Apps Script web app URL into VM_API_URL.'));
+                return;
+              }
+              fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // "simple" request → no CORS pre-flight
+                body: JSON.stringify({ fn: name, args: args })
+              })
+                .then(function (r) { if (!r.ok) throw new Error('Server error ' + r.status); return r.json(); })
+                .then(function (d) {
+                  if (d && d.ok) { if (ok) ok(d.result); }
+                  else if (fail) fail(new Error((d && d.error) || 'Unknown server error'));
+                })
+                .catch(function (err) {
+                  if (!fail) return;
+                  var m = String(err && err.message || err);
+                  if (/Failed to fetch|NetworkError|Load failed|JSON/i.test(m)) {
+                    m = 'Cannot reach the server. Check your internet connection, the API URL, and that the Apps Script deployment is set to "Anyone".';
+                  }
+                  fail(new Error(m));
+                });
+            };
+          }
+        });
+      }
+      window.google = { script: { run: runner(null, null) } };
+
+      // Installable app (Add to Home screen)
+      if ('serviceWorker' in navigator && location.protocol === 'https:') {
+        window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
+      }
+    })();
+  </script>
+  <div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+ *  STATE + UTILS
+ * ============================================================ */
+const S = { token: null, user: null, lists: {}, master: [], view: '', params: {},
+            rec: {}, buyers: [], vehicles: [], matches: [], mIndex: {} };
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c =>
+  ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const norm = s => String(s == null ? '' : s).toLowerCase().replace(/[\s_\-\/]+/g, '');
+const uniq = a => [...new Set(a.filter(Boolean))].sort((x, y) => x.localeCompare(y));
+const lk = v => (v === '' || v == null) ? '-' : 'Rs. ' + v + ' Lakhs';
+
+function store(k, v) { try { v == null ? sessionStorage.removeItem(k) : sessionStorage.setItem(k, v); } catch (e) {} }
+function stored(k) { try { return sessionStorage.getItem(k); } catch (e) { return null; } }
+
+let toastTimer;
+function toast(msg, bad) {
+  const t = $('toast'); t.textContent = msg; t.className = 'toast show' + (bad ? ' bad' : '');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.className = 'toast', bad ? 4000 : 2400);
+}
+
+/** Server API call. On error, shows a toast and returns null. */
+function call(action, payload) {
+  return new Promise(resolve => {
+    google.script.run
+      .withSuccessHandler(resolve)
+      .withFailureHandler(err => {
+        const msg = String((err && err.message) || err);
+        if (msg.indexOf('SESSION_EXPIRED') > -1) { toast('Session expired — please log in again', true); logout(true); }
+        else toast('❌ ' + msg.replace(/^Error:\s*/, '').replace(/^Exception:\s*/, ''), true);
+        resolve(null);
+      })
+      .api(S.token, action, payload || {});
+  });
+}
+
+function waNum(p) {
+  let d = String(p || '').replace(/\D/g, '');
+  if (d.startsWith('0')) d = '94' + d.slice(1); else if (d.length === 9) d = '94' + d;
+  return d;
+}
+function phoneBtns(phone, waText) {
+  if (!phone) return '';
+  return `<a class="btn sm primary" href="tel:${esc(phone)}">📞 ${esc(phone)}</a>
+          <a class="btn sm wa" target="_blank" href="https://wa.me/${waNum(phone)}${waText ? '?text=' + encodeURIComponent(waText) : ''}">💬 WhatsApp</a>`;
+}
+function opts(list, value, blank) {
+  return (blank !== undefined ? `<option value="">${esc(blank)}</option>` : '') +
+    (list || []).map(x => `<option ${String(x) === String(value) ? 'selected' : ''}>${esc(x)}</option>`).join('');
+}
+function fmtDT(v) { return v ? String(v).replace('T', ' ').slice(0, 16) : ''; }
+function carName(v) { return [v.make, v.model, v.year].filter(Boolean).join(' '); }
+function wantName(b) {
+  const w = [b.make, b.model].filter(Boolean).join(' ') || (b.vehicle_type ? 'Any ' + b.vehicle_type : 'Any vehicle');
+  const y = (b.year_from || b.year_to) ? ` (${b.year_from || '…'}–${b.year_to || '…'})` : '';
+  return w + y;
+}
+/* ============================================================
+ *  SEARCH ON ikman.lk / riyasewana.com
+ *  Only builds a search link and opens the site in a new tab —
+ *  nothing is copied from those websites into this app.
+ * ============================================================ */
+const slugify = s => String(s || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+// Our vehicle types → the category names used in each site's URLs
+const RS_TYPE = { 'car': 'cars', 'suv / jeep': 'suvs', 'van': 'vans', 'cab / pickup': 'pickups',
+  'motorcycle': 'motorcycles', 'three wheeler': 'three-wheels', 'lorry': 'lorries' };
+const RS_WANTED = 'https://riyasewana.com/wanted.php';
+const IK_TYPE = { 'car': 'cars', 'van': 'vans', 'motorcycle': 'motorbikes-scooters' };
+
+/** o = buyer (uses year_from/year_to) or vehicle (uses year). */
+function extSearchUrls(o, isBuyer) {
+  const type = String(o.vehicle_type || '').trim().toLowerCase();
+  const mk = slugify(o.make), md = slugify(o.model);
+  let yf = isBuyer ? o.year_from : o.year, yt = isBuyer ? o.year_to : o.year;
+  if (yf && !yt) yt = new Date().getFullYear();
+  if (yt && !yf) yf = 1980;
+
+  // riyasewana.com/search/<type>/<make>/<model>/<from>-<to>
+  let rs = 'https://riyasewana.com/search';
+  const rt = RS_TYPE[type];
+  if (rt) {
+    rs += '/' + rt;
+    if (mk) { rs += '/' + mk; if (md) { rs += '/' + md; if (yf && yt) rs += '/' + yf + '-' + yt; } }
+  }
+
+  // ikman.lk/en/ads/sri-lanka/<category>/<make>/<model>  (or keyword search)
+  let ik;
+  const it = IK_TYPE[type];
+  // ikman uses its own spellings for multi-word names (e.g. "wagonr"), so those use keyword search
+  const simple = !/-/.test(mk) && !/-/.test(md);
+  if (it && simple) {
+    ik = 'https://ikman.lk/en/ads/sri-lanka/' + it + (mk ? '/' + mk + (md ? '/' + md : '') : '');
+  } else {
+    const q = slugify([o.make, o.model].filter(Boolean).join(' ') || o.vehicle_type || 'vehicles');
+    ik = 'https://ikman.lk/en/ads/q/sri-lanka/' + q;
+  }
+  return { ikman: ik, riyasewana: rs };
+}
+
+/** Small buttons for cards. */
+function extButtons(o, isBuyer) {
+  if (!o || (!o.make && !o.vehicle_type)) return '';
+  const u = extSearchUrls(o, isBuyer);
+  const tip = isBuyer ? 'Find vehicles for this buyer' : 'Compare market prices for this vehicle';
+  return `<a class="btn sm ext" target="_blank" rel="noopener" title="${tip}" href="${esc(u.ikman)}">🔎 ikman</a>
+          <a class="btn sm ext" target="_blank" rel="noopener" title="${tip}" href="${esc(u.riyasewana)}">🔎 Riyasewana</a>`;
+}
+
+/** Bigger box for the results page after saving a call. */
+function extBox(o, isBuyer) {
+  if (!o || (!o.make && !o.vehicle_type)) return '';
+  const u = extSearchUrls(o, isBuyer);
+  // Note: keep URLs out of nested template literals — Apps Script's HTML service
+  // mistakes the "//" in them for a comment and breaks the page.
+  const wanted = isBuyer ? '' :
+    '<a class="btn ext" target="_blank" rel="noopener" href="' + RS_WANTED + '">🙋 Riyasewana wanted ads</a>';
+  const hint = isBuyer
+    ? `Look for more vehicles for this buyer${o.max_budget ? ' (budget ' + esc(lk(o.max_budget)) + ')' : ''}. If you find a good one, call the seller and add it as a Vehicle with their permission.`
+    : `Check what similar vehicles sell for, or look for people who want to buy one.`;
+  return `<div class="extbox">
+    <div class="lbl">🌐 ${isBuyer ? 'Search other websites' : 'Market check on other websites'} — ${hint}</div>
+    <div class="row">
+      <a class="btn ext" target="_blank" rel="noopener" href="${esc(u.ikman)}">🔎 ikman.lk</a>
+      <a class="btn ext" target="_blank" rel="noopener" href="${esc(u.riyasewana)}">🔎 Riyasewana</a>
+      ${wanted}
+    </div>
+  </div>`;
+}
+
+/* ---------- WhatsApp message helpers (Sinhala) ---------- */
+const lkSi = v => (v === '' || v == null) ? '' : 'රු. ලක්ෂ ' + v;
+function wantSi(b) {
+  const w = [b.make, b.model].filter(Boolean).join(' ') || b.vehicle_type || 'වාහනයක්';
+  const y = (b.year_from || b.year_to) ? ` (${b.year_from || ''}–${b.year_to || ''})` : '';
+  return w + y;
+}
+
+function photoLink(v) {
+  return Number(v.photo_count) > 0 && v.vehicle_id
+    ? `<button type="button" class="btn sm" onclick="openGallery('${esc(v.vehicle_id)}')">📷 Photos (${esc(v.photo_count)})</button>` : '';
+}
+
+/* ------------------------------------------------------------
+ *  IN-APP PHOTO VIEWER — photos load through the app, so nobody
+ *  is ever sent to Google Drive (no access to other folders).
+ * ------------------------------------------------------------ */
+const G = { vehicleId: '', photos: [], i: 0, cache: {}, canDelete: false };
+
+async function openGallery(vehicleId) {
+  Object.assign(G, { vehicleId, photos: [], i: 0, canDelete: false });
+  const back = document.createElement('div');
+  back.className = 'pe-back'; back.id = 'gal';
+  back.innerHTML = `<div class="pe">
+    <div class="gal-bar"><h3 id="gal_t">📷 ${esc(vehicleId)} — loading…</h3>
+      <button class="btn" onclick="closeGallery()">✕ Close</button></div>
+    <img id="gal_img" class="gal-img" alt="">
+    <div class="gal-bar">
+      <button class="btn" onclick="galMove(-1)">◀ Prev</button>
+      <span id="gal_n" class="muted"></span>
+      <span class="row">
+        <button class="btn" id="gal_del" style="display:none;color:var(--bad)" onclick="galDelete(this)">🗑 Delete</button>
+        <button class="btn" onclick="galMove(1)">Next ▶</button>
+      </span>
+    </div></div>`;
+  back.addEventListener('click', e => { if (e.target === back) closeGallery(); });
+  document.body.appendChild(back);
+  document.addEventListener('keydown', galKeys);
+  const r = await call('listPhotos', { vehicleId });
+  if (!r || !$('gal')) return;
+  G.photos = r.photos; G.canDelete = r.canDelete;
+  $('gal_del').style.display = G.canDelete ? '' : 'none';
+  $('gal_t').textContent = `📷 ${vehicleId}` + (S.rec[vehicleId] ? ' — ' + carName(S.rec[vehicleId]) : '');
+  galShow();
+}
+function closeGallery() { const g = $('gal'); if (g) g.remove(); document.removeEventListener('keydown', galKeys); }
+function galKeys(e) { if (e.key === 'Escape') closeGallery(); if (e.key === 'ArrowLeft') galMove(-1); if (e.key === 'ArrowRight') galMove(1); }
+function galMove(d) { if (!G.photos.length) return; G.i = (G.i + d + G.photos.length) % G.photos.length; galShow(); }
+async function galLoad(i) {
+  const p = G.photos[i]; if (!p) return null;
+  if (!G.cache[p.id]) {
+    G.cache[p.id] = call('getPhoto', { vehicleId: G.vehicleId, fileId: p.id }).then(r => r && r.data);
+  }
+  return G.cache[p.id];
+}
+async function galShow() {
+  if (!$('gal')) return;
+  if (!G.photos.length) { $('gal_n').textContent = 'No photos'; $('gal_img').removeAttribute('src'); return; }
+  const i = G.i;
+  $('gal_n').textContent = `${i + 1} / ${G.photos.length} — loading…`;
+  const data = await galLoad(i);
+  if (!$('gal') || G.i !== i) return;
+  if (data) $('gal_img').src = data;
+  $('gal_n').textContent = `${i + 1} / ${G.photos.length}`;
+  if (G.photos.length > 1) galLoad((i + 1) % G.photos.length); // pre-load next
+}
+async function galDelete(btn) {
+  const p = G.photos[G.i];
+  if (!p || !confirm('Delete this photo?')) return;
+  btn.disabled = true;
+  const r = await call('deletePhoto', { vehicleId: G.vehicleId, fileId: p.id });
+  btn.disabled = false;
+  if (!r) return;
+  G.photos.splice(G.i, 1); G.i = Math.max(0, Math.min(G.i, G.photos.length - 1));
+  if (S.rec[G.vehicleId]) S.rec[G.vehicleId].photo_count = r.photo_count;
+  Object.values(S.mIndex).forEach(m => { if (m.vehicle.vehicle_id === G.vehicleId) m.vehicle.photo_count = r.photo_count; });
+  if ($('v_photo_link') && S.params.id === G.vehicleId) $('v_photo_link').innerHTML = photoLink(S.rec[G.vehicleId]) || '<span class="muted">No photos yet</span>';
+  toast('🗑 Photo deleted');
+  galShow();
+}
+
+/** Shrinks a photo in the browser before upload (max 1600px JPEG) so uploads are fast. */
+function resizeImage(file, max, quality) {
+  max = max || 1600; quality = quality || 0.82;
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      const s = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
+      const c = document.createElement('canvas');
+      c.width = Math.round(img.naturalWidth * s); c.height = Math.round(img.naturalHeight * s);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(url);
+      resolve(c.toDataURL('image/jpeg', quality));
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Could not read ' + file.name)); };
+    img.src = url;
+  });
+}
+
+async function uploadPhotos(vehicleId, files) {
+  files = Array.from(files || []).slice(0, 10);
+  let last = null, done = 0;
+  for (let i = 0; i < files.length; i++) {
+    let data;
+    try { data = await resizeImage(files[i]); } catch (e) { toast('❌ ' + e.message, true); continue; }
+    data = await blurEditor(data, i + 1, files.length);   // let the officer hide the number plate
+    if (!data) continue;                                   // photo skipped
+    toast(`📷 Uploading photo ${i + 1} of ${files.length}…`);
+    const r = await call('uploadPhoto', { vehicleId, data });
+    if (r) { last = r; done++; }
+  }
+  if (last) toast(`✅ ${done} photo(s) uploaded`);
+  return last;
+}
+
+/* ------------------------------------------------------------
+ *  NUMBER-PLATE BLUR EDITOR
+ *  Drag a box over the number plate (or anything private) → that area is pixelated.
+ *  The blur is baked into the JPEG before upload, so the original is never sent.
+ *  Resolves with the edited image (data URL), or null if the photo is skipped.
+ * ------------------------------------------------------------ */
+function blurEditor(dataUrl, n, total) {
+  return new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => {
+      const back = document.createElement('div');
+      back.className = 'pe-back';
+      back.innerHTML = `<div class="pe">
+        <h3>📷 Photo ${n} of ${total} — drag a box over the number plate to blur it</h3>
+        <div class="muted">You can draw several boxes (plate, faces, documents). Nothing is uploaded until you press Upload.</div>
+        <canvas id="pe_c"></canvas>
+        <div class="row">
+          <button class="btn" id="pe_undo">↩ Undo</button>
+          <button class="btn" id="pe_skip">✕ Skip this photo</button>
+          <button class="btn green" id="pe_ok">⬆ Upload</button>
+        </div></div>`;
+      document.body.appendChild(back);
+
+      const c = back.querySelector('#pe_c'), ctx = c.getContext('2d');
+      c.width = img.naturalWidth; c.height = img.naturalHeight;
+      const boxes = [];
+      let start = null, cur = null;
+
+      const redraw = () => {
+        ctx.drawImage(img, 0, 0);
+        boxes.forEach(b => pixelate(ctx, b));
+        if (start && cur) {
+          ctx.strokeStyle = '#ffcc00'; ctx.lineWidth = Math.max(3, c.width / 300);
+          ctx.setLineDash([12, 8]);
+          ctx.strokeRect(start.x, start.y, cur.x - start.x, cur.y - start.y);
+          ctx.setLineDash([]);
+        }
+      };
+      const pos = e => {
+        const r = c.getBoundingClientRect();
+        return { x: (e.clientX - r.left) * c.width / r.width, y: (e.clientY - r.top) * c.height / r.height };
+      };
+      c.addEventListener('pointerdown', e => { c.setPointerCapture(e.pointerId); start = cur = pos(e); });
+      c.addEventListener('pointermove', e => { if (start) { cur = pos(e); redraw(); } });
+      c.addEventListener('pointerup', () => {
+        if (start && cur) {
+          const b = { x: Math.min(start.x, cur.x), y: Math.min(start.y, cur.y),
+                      w: Math.abs(cur.x - start.x), h: Math.abs(cur.y - start.y) };
+          if (b.w > 8 && b.h > 8) boxes.push(b);
+        }
+        start = cur = null; redraw();
+      });
+      redraw();
+
+      const close = val => { back.remove(); resolve(val); };
+      back.querySelector('#pe_undo').onclick = () => { boxes.pop(); redraw(); };
+      back.querySelector('#pe_skip').onclick = () => close(null);
+      back.querySelector('#pe_ok').onclick = () => { start = cur = null; redraw(); close(c.toDataURL('image/jpeg', 0.85)); };
+    };
+    img.onerror = () => resolve(dataUrl);
+    img.src = dataUrl;
+  });
+}
+
+/** Strong mosaic over a box — irreversible once saved as JPEG. */
+function pixelate(ctx, b) {
+  const x = Math.max(0, Math.round(b.x)), y = Math.max(0, Math.round(b.y));
+  const w = Math.min(ctx.canvas.width - x, Math.round(b.w)), h = Math.min(ctx.canvas.height - y, Math.round(b.h));
+  if (w < 2 || h < 2) return;
+  const block = Math.max(10, Math.round(Math.min(w, h) / 4));
+  const t = document.createElement('canvas');
+  t.width = Math.max(1, Math.ceil(w / block)); t.height = Math.max(1, Math.ceil(h / block));
+  const tc = t.getContext('2d');
+  tc.drawImage(ctx.canvas, x, y, w, h, 0, 0, t.width, t.height);
+  ctx.save();
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(t, 0, 0, t.width, t.height, x, y, w, h);
+  ctx.restore();
+}
+
+/** Officer contact block — shown instead of another officer's customer. */
+function officerBlock(o, waText, label) {
+  o = o || {};
+  return `<div class="officer">
+    <div class="lbl">${esc(label || '👮 Contact through officer')}</div>
+    <div class="nm">${esc(o.name || 'Unknown officer')}</div>
+    <div class="actions">${o.phone ? phoneBtns(o.phone, waText) : '<span class="muted">No phone number saved for this officer</span>'}</div>
+  </div>`;
+}
+function statusBadge(s, okList) {
+  return `<span class="badge ${okList.includes(s) ? 'ok' : 'off'}">${esc(s || '-')}</span>`;
+}
+
+/* ============================================================
+ *  BOOT / AUTH
+ * ============================================================ */
+async function boot() {
+  S.token = stored('vm_token');
+  if (!S.token) return renderLogin();
+  $('app').innerHTML = '<div class="loading">Loading…</div>';
+  const r = await call('init');
+  if (!r) return renderLogin();
+  applyInit(r);
+}
+
+function applyInit(r) {
+  S.user = r.user; S.lists = r.lists; S.master = r.master;
+  renderShell();
+  go('dashboard');
+}
+
+function renderLogin() {
+  $('app').innerHTML = `
+    <div class="login"><form class="card" onsubmit="doLogin(event)">
+      <h1>🚗 Vehicle Match</h1>
+      <div class="muted">Match vehicle buyers with sellers</div>
+      <label class="f"><span>Username</span><input id="lg_u" autocomplete="username" required></label>
+      <label class="f"><span>Password</span><input id="lg_p" type="password" autocomplete="current-password" required></label>
+      <div class="err" id="lg_err"></div>
+      <div class="ok" id="lg_ok"></div>
+      <button class="btn primary big" id="lg_btn">Login</button>
+      <div id="lg_reg" style="text-align:center;display:none">New officer? <button type="button" class="link" onclick="renderRegister()">Create an account</button></div>
+    </form></div>`;
+  $('lg_u').focus();
+  google.script.run.withSuccessHandler(open => { if (open && $('lg_reg')) $('lg_reg').style.display = ''; }).registrationOpen();
+}
+
+function renderRegister() {
+  $('app').innerHTML = `
+    <div class="login"><form class="card" onsubmit="doRegister(event)">
+      <h1>📝 Create an account</h1>
+      <div class="muted">After you register, the admin must approve your account before you can log in.</div>
+      <label class="f req"><span>Full name</span><input id="rg_n" required autocomplete="name"></label>
+      <label class="f req"><span>Mobile number</span><input id="rg_p" type="tel" inputmode="tel" placeholder="07XXXXXXXX" required autocomplete="tel"></label>
+      <label class="f req"><span>Username</span><input id="rg_u" required pattern="[a-zA-Z0-9._\-]{3,}" autocomplete="username" placeholder="e.g. kasun"></label>
+      <label class="f req"><span>Password</span><input id="rg_pw" type="password" minlength="6" required autocomplete="new-password"></label>
+      <label class="f req"><span>Confirm password</span><input id="rg_pw2" type="password" minlength="6" required autocomplete="new-password"></label>
+      <div class="err" id="rg_err"></div>
+      <button class="btn primary big" id="rg_btn">Register</button>
+      <div style="text-align:center"><button type="button" class="link" onclick="renderLogin()">← Back to login</button></div>
+    </form></div>`;
+  $('rg_n').focus();
+}
+
+function doRegister(e) {
+  e.preventDefault();
+  $('rg_err').textContent = '';
+  if ($('rg_pw').value !== $('rg_pw2').value) { $('rg_err').textContent = 'Passwords do not match'; return; }
+  const btn = $('rg_btn'); btn.disabled = true;
+  google.script.run
+    .withSuccessHandler(r => {
+      const uname = $('rg_u').value;
+      renderLogin();
+      $('lg_u').value = uname; $('lg_p').focus();
+      $('lg_ok').textContent = r.needsApproval
+        ? '✅ Registration sent. You can log in once the admin approves your account.'
+        : '✅ Account created. You can log in now.';
+    })
+    .withFailureHandler(err => {
+      $('rg_err').textContent = String(err.message || err).replace(/^Error:\s*/, '');
+      btn.disabled = false;
+    })
+    .register({ full_name: $('rg_n').value, phone: $('rg_p').value, username: $('rg_u').value, password: $('rg_pw').value });
+}
+
+function doLogin(e) {
+  e.preventDefault();
+  const btn = $('lg_btn'); btn.disabled = true; $('lg_err').textContent = '';
+  google.script.run
+    .withSuccessHandler(async r => {
+      S.token = r.token; store('vm_token', r.token);
+      const init = await call('init');
+      if (init) applyInit(init); else btn.disabled = false;
+    })
+    .withFailureHandler(err => {
+      $('lg_err').textContent = String(err.message || err).replace(/^Error:\s*/, '');
+      btn.disabled = false;
+    })
+    .login($('lg_u').value, $('lg_p').value);
+}
+
+function logout(silent) {
+  if (!silent && S.token) google.script.run.api(S.token, 'logout', {});
+  S.token = null; store('vm_token', null);
+  renderLogin();
+}
+
+/* ============================================================
+ *  SHELL + ROUTER
+ * ============================================================ */
+const TABS = [
+  ['dashboard', '🏠 Dashboard'], ['newcall', '📞 New Call'], ['buyers', '🙋 Buyers'],
+  ['vehicles', '🚗 Vehicles'], ['matches', '🔗 Matches'], ['settings', '⚙️ Settings']
+];
+
+function renderShell() {
+  $('app').innerHTML = `
+    <header>
+      <div class="hbar">
+        <div class="brand">🚗 Vehicle Match</div>
+        <div class="who"><span class="uname">👤 ${esc(S.user.full_name)}</span><button onclick="logout()">Logout</button></div>
+      </div>
+      <nav id="nav">${TABS.map(t => `<button data-v="${t[0]}" onclick="go('${t[0]}')">${t[1]}</button>`).join('')}</nav>
+    </header>
+    <main id="main"></main>`;
+}
+
+function setMain(html) { $('main').innerHTML = html; }
+
+function go(view, params) {
+  S.view = view; S.params = params || {};
+  const tab = { buyerForm: 'buyers', vehicleForm: 'vehicles', results: 'newcall' }[view] || view;
+  document.querySelectorAll('#nav button').forEach(b => b.classList.toggle('on', b.dataset.v === tab));
+  window.scrollTo(0, 0);
+  ({ dashboard: viewDashboard, newcall: viewNewCall, buyers: viewBuyers, vehicles: viewVehicles,
+     matches: viewMatches, settings: viewSettings, buyerForm: viewBuyerForm, vehicleForm: viewVehicleForm,
+     results: viewResults
+  })[view]();
+}
+
+/* ============================================================
+ *  DASHBOARD
+ * ============================================================ */
+async function viewDashboard() {
+  setMain('<div class="loading">Loading…</div>');
+  const d = await call('dashboard');
+  if (!d || S.view !== 'dashboard') return;
+  const s = d.stats;
+  registerMatches(d.topNew);
+  setMain(`
+    ${d.pendingUsers ? `<div class="notice">👥 ${d.pendingUsers} new user(s) waiting for approval — <a href="#" onclick="go('settings');return false">review in Settings → Users</a>.</div>` : ''}
+    ${!S.user.phone ? `<div class="notice">📱 Add your phone number in <a href="#" onclick="go('settings');return false">Settings</a> so other officers can contact you about matches.</div>` : ''}
+    <div class="tiles">
+      <div class="tile" onclick="go('buyers')"><b>${s.activeBuyers}</b><span>🙋 Active buyers</span></div>
+      <div class="tile" onclick="go('vehicles')"><b>${s.availableVehicles}</b><span>🚗 Available vehicles</span></div>
+      <div class="tile" onclick="go('matches')"><b>${s.newMatches}</b><span>✨ New matches</span></div>
+      <div class="tile" onclick="go('matches')"><b>${s.inProgress}</b><span>⏳ In progress</span></div>
+      <div class="tile"><b>${s.dealsThisMonth}</b><span>🤝 Deals this month</span></div>
+    </div>
+    <div class="row" style="margin-top:14px">
+      <button class="btn primary big" onclick="go('newcall')">📞 Add a new call</button>
+    </div>
+    <h2>✨ Top new matches</h2>
+    <div class="grid">${d.topNew.map(matchCard).join('') || '<div class="empty">No new matches</div>'}</div>`);
+}
+
+/* ============================================================
+ *  NEW CALL (phone lookup first)
+ * ============================================================ */
+function viewNewCall() {
+  setMain(`
+    <div class="card narrow">
+      <h2 style="margin-top:0">📞 New Call</h2>
+      <p class="muted">Search the phone number first — you'll see if this person has called before.</p>
+      <form class="row" onsubmit="doLookup(event)">
+        <input id="lk_phone" type="tel" inputmode="tel" placeholder="07XXXXXXXX" required style="flex:1 1 200px">
+        <button class="btn primary">🔍 Search</button>
+      </form>
+      <div id="lk_res"></div>
+    </div>`);
+  $('lk_phone').focus();
+}
+
+async function doLookup(e) {
+  e.preventDefault();
+  $('lk_res').innerHTML = '<div class="loading">Searching…</div>';
+  const r = await call('lookupPhone', { phone: $('lk_phone').value });
+  if (!r) { $('lk_res').innerHTML = ''; return; }
+  r.buyers.forEach(b => S.rec[b.buyer_id] = b);
+  r.vehicles.forEach(v => S.rec[v.vehicle_id] = v);
+  const found = r.buyers.length + r.vehicles.length;
+  $('lk_res').innerHTML = `
+    <h2>${found ? `🔎 ${found} record(s) found for this number` : '🆕 No previous records for this number'}</h2>
+    ${found ? `<div class="grid">${r.buyers.map(buyerCard).join('')}${r.vehicles.map(vehicleCard).join('')}</div>` : ''}
+    <h2>What is this call about?</h2>
+    <div class="row">
+      <button class="btn big" style="background:#e8effd;color:#1d3f8f" onclick="go('buyerForm',{phone:'${esc(r.phone)}'})">🙋 Wants to buy a vehicle</button>
+      <button class="btn big" style="background:#fdf1e2;color:#8a4b00" onclick="go('vehicleForm',{phone:'${esc(r.phone)}'})">🚗 Has a vehicle to sell</button>
+    </div>`;
+}
+
+/* ============================================================
+ *  VEHICLE TYPE → MAKE → MODEL pickers
+ * ============================================================ */
+function makesFor(type) {
+  return uniq(S.master.filter(m => !type || norm(m.vehicle_type) === norm(type)).map(m => m.make));
+}
+function modelsFor(type, make) {
+  return uniq(S.master.filter(m => (!type || norm(m.vehicle_type) === norm(type)) &&
+    (!make || norm(m.make) === norm(make))).map(m => m.model));
+}
+function updateMakes(p) {
+  $(p + '_dl_make').innerHTML = makesFor($(p + '_vehicle_type').value).map(x => `<option value="${esc(x)}">`).join('');
+  updateModels(p);
+}
+function updateModels(p) {
+  $(p + '_dl_model').innerHTML = modelsFor($(p + '_vehicle_type').value, $(p + '_make').value)
+    .map(x => `<option value="${esc(x)}">`).join('');
+}
+function vehiclePickers(p, r, anyLabel) {
+  const req = !anyLabel;
+  return `
+    <label class="f ${req ? 'req' : ''}"><span>Vehicle type</span>
+      <select id="${p}_vehicle_type" onchange="updateMakes('${p}')" ${req ? 'required' : ''}>${opts(S.lists.VEHICLE_TYPE, r.vehicle_type, anyLabel || '— Select —')}</select></label>
+    <label class="f ${req ? 'req' : ''}"><span>Make (Brand)</span>
+      <input id="${p}_make" list="${p}_dl_make" value="${esc(r.make)}" oninput="updateModels('${p}')" placeholder="${anyLabel ? 'Any' : 'e.g. Toyota'}" ${req ? 'required' : ''}>
+      <datalist id="${p}_dl_make"></datalist></label>
+    <label class="f ${req ? 'req' : ''}"><span>Model</span>
+      <input id="${p}_model" list="${p}_dl_model" value="${esc(r.model)}" placeholder="${anyLabel ? 'Any' : 'e.g. Aqua'}" ${req ? 'required' : ''}>
+      <datalist id="${p}_dl_model"></datalist></label>`;
+}
+function fld(p, name, label, value, attrs, cls) {
+  return `<label class="f ${cls || ''}"><span>${label}</span><input id="${p}_${name}" value="${esc(value)}" ${attrs || ''}></label>`;
+}
+function sel(p, name, label, list, value, blank, cls) {
+  return `<label class="f ${cls || ''}"><span>${label}</span><select id="${p}_${name}">${opts(list, value, blank)}</select></label>`;
+}
+function collect(p, fields) {
+  const o = {}; fields.forEach(f => { const el = $(p + '_' + f); o[f] = el ? el.value.trim() : ''; }); return o;
+}
+
+/* ============================================================
+ *  BUYER FORM
+ * ============================================================ */
+const BUYER_FIELDS = ['name', 'phone', 'phone2', 'vehicle_type', 'make', 'model', 'year_from', 'year_to',
+  'min_budget', 'max_budget', 'fuel', 'transmission', 'district', 'notes', 'status'];
+
+function viewBuyerForm() {
+  const id = S.params.id;
+  const b = id ? (S.rec[id] || {}) : { phone: S.params.phone || '', status: 'Active' };
+  const yr = new Date().getFullYear();
+  setMain(`
+    <div class="card narrow">
+      <h2 style="margin-top:0" id="bf_title">${id ? '✏️ Buyer edit — ' + esc(id) : '🙋 New Buyer'}</h2>
+      <form class="form" onsubmit="saveBuyer(event)">
+        <div class="sec">👤 Details</div>
+        ${fld('b', 'name', 'Name', b.name, 'required', 'req')}
+        ${fld('b', 'phone', 'Phone', b.phone, 'type="tel" inputmode="tel" required', 'req')}
+        ${fld('b', 'phone2', 'Phone 2', b.phone2, 'type="tel" inputmode="tel"')}
+        ${sel('b', 'district', 'Preferred district', S.lists.DISTRICT, b.district, 'Any')}
+
+        <div class="sec">🚗 Vehicle wanted <span class="muted">(leave blank = any)</span></div>
+        ${vehiclePickers('b', b, 'Any')}
+        ${fld('b', 'year_from', 'Year (from)', b.year_from, `type="number" min="1970" max="${yr + 1}" placeholder="2014"`)}
+        ${fld('b', 'year_to', 'Year (to)', b.year_to, `type="number" min="1970" max="${yr + 1}" placeholder="${yr}"`)}
+        ${sel('b', 'fuel', 'Fuel', S.lists.FUEL, b.fuel, 'Any')}
+        ${sel('b', 'transmission', 'Transmission', S.lists.TRANSMISSION, b.transmission, 'Any')}
+
+        <div class="sec">💰 Budget (in Lakhs)</div>
+        ${fld('b', 'min_budget', 'Minimum (Lakhs)', b.min_budget, 'type="number" step="0.1" min="0" placeholder="50"')}
+        ${fld('b', 'max_budget', 'Maximum (Lakhs)', b.max_budget, 'type="number" step="0.1" min="0" placeholder="65" required', 'req')}
+        ${id ? sel('b', 'status', 'Status', S.lists.BUYER_STATUS, b.status) : ''}
+
+        <label class="f full"><span>Notes</span><textarea id="b_notes" placeholder="e.g. Buying on leasing, colour doesn't matter">${esc(b.notes)}</textarea></label>
+        <div class="full row"><button class="btn green big" id="b_save">💾 Save & view matches</button></div>
+      </form>
+    </div>
+    <div id="afterSave"></div>`);
+  updateMakes('b');
+  if (id) showRecordMatches({ buyerId: id }, 'Vehicles matching this buyer');
+}
+
+async function saveBuyer(e) {
+  e.preventDefault();
+  const d = collect('b', BUYER_FIELDS);
+  d.buyer_id = S.params.id || '';
+  const btn = $('b_save'); btn.disabled = true;
+  const r = await call('saveBuyer', d);
+  btn.disabled = false;
+  if (!r) return;
+  S.rec[r.id] = r.buyer;
+  if (r.master) S.master = r.master;
+  toast('✅ Saved — ' + r.id);
+  S.lastMatches = r.matches;
+  go('results', { kind: 'buyer', id: r.id });   // hide the call details, show only the matches
+}
+
+/* ============================================================
+ *  VEHICLE FORM
+ * ============================================================ */
+const VEHICLE_FIELDS = ['owner_name', 'owner_phone', 'phone2', 'vehicle_type', 'make', 'model', 'year', 'price',
+  'mileage', 'fuel', 'transmission', 'color', 'district', 'condition', 'notes', 'status'];
+
+function viewVehicleForm() {
+  const id = S.params.id;
+  const v = id ? (S.rec[id] || {}) : { owner_phone: S.params.phone || '', status: 'Available' };
+  const yr = new Date().getFullYear();
+  setMain(`
+    <div class="card narrow">
+      <h2 style="margin-top:0" id="vf_title">${id ? '✏️ Vehicle edit — ' + esc(id) : '🚗 New Vehicle for Sale (Seller)'}</h2>
+      <form class="form" onsubmit="saveVehicle(event)">
+        <div class="sec">👤 Owner</div>
+        ${fld('v', 'owner_name', 'Name', v.owner_name, 'required', 'req')}
+        ${fld('v', 'owner_phone', 'Phone', v.owner_phone, 'type="tel" inputmode="tel" required', 'req')}
+        ${fld('v', 'phone2', 'Phone 2', v.phone2, 'type="tel" inputmode="tel"')}
+        ${sel('v', 'district', 'District', S.lists.DISTRICT, v.district, '— Select —')}
+
+        <div class="sec">🚗 Vehicle</div>
+        ${vehiclePickers('v', v)}
+        ${fld('v', 'year', 'Year (YOM)', v.year, `type="number" min="1970" max="${yr + 1}" placeholder="2015"`)}
+        ${fld('v', 'mileage', 'Mileage (km)', v.mileage, 'type="number" min="0" placeholder="85000"')}
+        ${sel('v', 'fuel', 'Fuel', S.lists.FUEL, v.fuel, '— Select —')}
+        ${sel('v', 'transmission', 'Transmission', S.lists.TRANSMISSION, v.transmission, '— Select —')}
+        ${sel('v', 'condition', 'Condition', S.lists.CONDITION, v.condition, '— Select —')}
+        ${fld('v', 'color', 'Color', v.color, 'placeholder="White"')}
+
+        <div class="sec">💰 Price</div>
+        ${fld('v', 'price', 'Expected price (Lakhs)', v.price, 'type="number" step="0.1" min="0" placeholder="62.5" required', 'req')}
+        ${id ? sel('v', 'status', 'Status', S.lists.VEHICLE_STATUS, v.status) : ''}
+
+        <label class="f full"><span>Notes</span><textarea id="v_notes" placeholder="e.g. Has an active lease, first owner">${esc(v.notes)}</textarea></label>
+
+        <div class="sec">📷 Photos</div>
+        <div class="full photo-pick">
+          <div id="v_photo_link">${photoLink(v) || '<span class="muted">No photos yet</span>'}</div>
+          <input type="file" id="v_photos" accept="image/*" multiple>
+          <span class="muted">Choose up to 10 photos. When you press Save, each photo opens so you can blur the number plate before it is uploaded.</span>
+        </div>
+        <div class="full row"><button class="btn green big" id="v_save">💾 Save & view matches</button></div>
+      </form>
+    </div>
+    <div id="afterSave"></div>`);
+  updateMakes('v');
+  if (id) showRecordMatches({ vehicleId: id }, 'Buyers matching this vehicle');
+}
+
+async function saveVehicle(e) {
+  e.preventDefault();
+  const d = collect('v', VEHICLE_FIELDS);
+  d.vehicle_id = S.params.id || '';
+  const btn = $('v_save'); btn.disabled = true;
+  const r = await call('saveVehicle', d);
+  btn.disabled = false;
+  if (!r) return;
+  S.rec[r.id] = r.vehicle;
+  if (r.master) S.master = r.master;
+  toast('✅ Saved — ' + r.id);
+  const files = $('v_photos') && $('v_photos').files ? Array.from($('v_photos').files) : [];
+  S.lastMatches = r.matches;
+  go('results', { kind: 'vehicle', id: r.id });   // hide the call details, show only the matches
+  if (files.length) {
+    const up = await uploadPhotos(r.id, files);
+    if (up) {
+      Object.assign(S.rec[r.id], up);
+      if (S.view === 'results' && S.params.id === r.id) renderResults();
+    }
+  }
+}
+
+/* ============================================================
+ *  RESULTS AFTER SAVING A CALL — only the matches are shown
+ * ============================================================ */
+function viewResults() {
+  renderResults();
+}
+function renderResults() {
+  const p = S.params, rec = S.rec[p.id] || {};
+  const isBuyer = p.kind === 'buyer';
+  const list = S.lastMatches || [];
+  registerMatches(list);
+  const what = isBuyer ? 'matching vehicle' : 'matching buyer';
+  setMain(`
+    <div class="card savedbar">
+      <div>
+        <div class="t">✅ ${isBuyer ? 'Buyer' : 'Vehicle'} ${esc(p.id)} saved</div>
+        <div class="muted">${list.length ? `${list.length} ${what}${list.length > 1 ? 's' : ''} found` : `No ${what}s yet — you'll see them here and on the Dashboard when one is added`}</div>
+      </div>
+      <div class="row">
+        <button class="btn" onclick="go('${isBuyer ? 'buyerForm' : 'vehicleForm'}',{id:'${esc(p.id)}'})">✏️ Edit details</button>
+        ${!isBuyer && photoLink(rec) ? photoLink(rec) : ''}
+        <button class="btn primary" onclick="go('newcall')">📞 Add new call</button>
+      </div>
+    </div>
+    ${extBox(rec, isBuyer)}
+    <h2>🔗 ${isBuyer ? 'Matching vehicles' : 'Matching buyers'} (${list.length})</h2>
+    <div class="grid">${list.map(m => matchCard(m, isBuyer ? 'vehicle' : 'buyer')).join('') ||
+      '<div class="empty">No matches yet</div>'}</div>
+    <div class="row" style="margin-top:18px">
+      <button class="btn primary big" onclick="go('newcall')">📞 Add new call</button>
+    </div>`);
+}
+
+async function showRecordMatches(filter, title) {
+  $('afterSave').innerHTML = '<div class="loading">Loading matches…</div>';
+  const r = await call('getMatches', filter);
+  if (r && $('afterSave')) renderRecordMatches(r.matches, title);
+}
+function renderRecordMatches(list, title) {
+  registerMatches(list);
+  $('afterSave').innerHTML = `<h2>🔗 ${title} (${list.length})</h2>
+    <div class="grid">${list.map(matchCard).join('') || '<div class="empty">No matches yet. New records are auto-matched as soon as they are added.</div>'}</div>`;
+}
+
+/* ============================================================
+ *  BUYERS LIST
+ * ============================================================ */
+async function viewBuyers() {
+  setMain(`
+    <div class="toolbar">
+      <input id="f_q" placeholder="🔍 Name / phone / model / ID" oninput="renderBuyers()">
+      <select id="f_st" onchange="renderBuyers()">${opts(S.lists.BUYER_STATUS, 'Active', 'All statuses')}</select>
+      <button class="btn primary" onclick="go('buyerForm',{})">+ Buyer</button>
+    </div>
+    <div id="list" class="grid"><div class="loading">Loading…</div></div>`);
+  const r = await call('listBuyers');
+  if (!r || S.view !== 'buyers') return;
+  S.buyers = r.buyers; r.buyers.forEach(b => S.rec[b.buyer_id] = b);
+  renderBuyers();
+}
+function renderBuyers() {
+  const q = norm($('f_q').value), st = $('f_st').value;
+  const list = S.buyers.filter(b => (!st || b.status === st) &&
+    (!q || norm([b.buyer_id, b.name, b.phone, b.phone2, b.make, b.model, b.district].join(' ')).includes(q)));
+  $('list').innerHTML = list.map(buyerCard).join('') || '<div class="empty">No buyers</div>';
+}
+function buyerCard(b) {
+  if (b.masked) {
+    return `<div class="card rec buyer">
+      <div class="top"><div><div class="title">🙋 Buyer ${esc(b.buyer_id)}</div><div class="muted">Registered by another officer</div></div>
+        ${statusBadge(b.status, ['Active'])}</div>
+      <div>🔎 ${esc(wantName(b))} · Budget ${esc(lk(b.max_budget))}</div>
+      <div class="actions">${extButtons(b, true)}</div>
+      ${officerBlock(b.officer, `ආයුබෝවන් ${b.officer && b.officer.name || ''}, ඔබ යටතේ ලියාපදිංචි කර ඇති ${wantSi(b)} සොයන ගැනුම්කරුවෙකු ගැන මට ඇමතුමක් ලැබුණා.`)}
+    </div>`;
+  }
+  return `<div class="card rec buyer">
+    <div class="top"><div><div class="title">${esc(b.name)}</div><div class="muted">${esc(b.buyer_id)} · ${esc(fmtDT(b.created_at).slice(0, 10))}</div></div>
+      ${statusBadge(b.status, ['Active'])}</div>
+    <div>🔎 ${esc(wantName(b))}</div>
+    <div class="sub">Budget: ${b.min_budget ? esc(b.min_budget) + '–' : ''}${esc(lk(b.max_budget))}${b.fuel ? ' · ' + esc(b.fuel) : ''}${b.transmission ? ' · ' + esc(b.transmission) : ''}${b.district ? ' · 📍' + esc(b.district) : ''}</div>
+    ${b.notes ? `<div class="sub">📝 ${esc(b.notes)}</div>` : ''}
+    <div class="actions">
+      <button class="btn sm" onclick="go('buyerForm',{id:'${esc(b.buyer_id)}'})">✏️ Edit</button>
+      ${extButtons(b, true)}
+      <button class="btn sm" onclick="go('matches',{buyerId:'${esc(b.buyer_id)}'})">🔗 Matches${b.matchCount !== undefined ? ' (' + b.matchCount + ')' : ''}</button>
+      ${phoneBtns(b.phone)}
+    </div>
+    ${!b.mine && b.officer ? `<div class="muted">👮 Officer: ${esc(b.officer.name)}</div>` : ''}
+    </div>`;
+}
+
+/* ============================================================
+ *  VEHICLES LIST
+ * ============================================================ */
+async function viewVehicles() {
+  setMain(`
+    <div class="toolbar">
+      <input id="f_q" placeholder="🔍 Name / phone / make / model / ID" oninput="renderVehicles()">
+      <select id="f_st" onchange="renderVehicles()">${opts(S.lists.VEHICLE_STATUS, 'Available', 'All statuses')}</select>
+      <select id="f_ty" onchange="renderVehicles()">${opts(S.lists.VEHICLE_TYPE, '', 'All types')}</select>
+      <button class="btn primary" onclick="go('vehicleForm',{})">+ Vehicle</button>
+    </div>
+    <div id="list" class="grid"><div class="loading">Loading…</div></div>`);
+  const r = await call('listVehicles');
+  if (!r || S.view !== 'vehicles') return;
+  S.vehicles = r.vehicles; r.vehicles.forEach(v => S.rec[v.vehicle_id] = v);
+  renderVehicles();
+}
+function renderVehicles() {
+  const q = norm($('f_q').value), st = $('f_st').value, ty = $('f_ty').value;
+  const list = S.vehicles.filter(v => (!st || v.status === st) && (!ty || v.vehicle_type === ty) &&
+    (!q || norm([v.vehicle_id, v.owner_name, v.owner_phone, v.phone2, v.make, v.model, v.district].join(' ')).includes(q)));
+  $('list').innerHTML = list.map(vehicleCard).join('') || '<div class="empty">No vehicles</div>';
+}
+function vehicleCard(v) {
+  if (v.masked) {
+    return `<div class="card rec seller">
+      <div class="top"><div><div class="title">${esc(carName(v))} — ${esc(lk(v.price))}</div><div class="muted">${esc(v.vehicle_id)} · Registered by another officer</div></div>
+        ${statusBadge(v.status, ['Available'])}</div>
+      <div class="sub">${[v.mileage ? v.mileage + ' km' : '', v.fuel, v.transmission, v.condition, v.district ? '📍' + v.district : ''].filter(Boolean).map(esc).join(' · ')}</div>
+      <div class="actions">${photoLink(v)}${extButtons(v, false)}</div>
+      ${officerBlock(v.officer, `ආයුබෝවන් ${v.officer && v.officer.name || ''}, ඔබ යටතේ ලියාපදිංචි කර ඇති ${carName(v)} වාහනය ගැන මට ඇමතුමක් ලැබුණා.`)}
+    </div>`;
+  }
+  return `<div class="card rec seller">
+    <div class="top"><div><div class="title">${esc(carName(v))} — ${esc(lk(v.price))}</div><div class="muted">${esc(v.vehicle_id)} · ${esc(v.vehicle_type)}</div></div>
+      ${statusBadge(v.status, ['Available'])}</div>
+    <div class="sub">${[v.mileage ? v.mileage + ' km' : '', v.fuel, v.transmission, v.condition, v.color, v.district ? '📍' + v.district : ''].filter(Boolean).map(esc).join(' · ')}</div>
+    <div class="sub">👤 ${esc(v.owner_name)}</div>
+    ${v.notes ? `<div class="sub">📝 ${esc(v.notes)}</div>` : ''}
+    <div class="actions">
+      <button class="btn sm" onclick="go('vehicleForm',{id:'${esc(v.vehicle_id)}'})">✏️ Edit</button>
+      ${extButtons(v, false)}
+      ${photoLink(v)}
+      <button class="btn sm" onclick="go('matches',{vehicleId:'${esc(v.vehicle_id)}'})">🔗 Matches${v.matchCount !== undefined ? ' (' + v.matchCount + ')' : ''}</button>
+      ${phoneBtns(v.owner_phone)}
+    </div>
+    ${!v.mine && v.officer ? `<div class="muted">👮 Officer: ${esc(v.officer.name)}</div>` : ''}
+    </div>`;
+}
+
+/* ============================================================
+ *  MATCHES
+ * ============================================================ */
+async function viewMatches() {
+  const p = S.params;
+  const fr = S.rec[p.buyerId || p.vehicleId];
+  const label = fr ? (p.buyerId ? (fr.name || 'Buyer') : carName(fr)) + ' (' + (p.buyerId || p.vehicleId) + ')' : (p.buyerId || p.vehicleId);
+  setMain(`
+    ${p.buyerId || p.vehicleId ? `<div class="chipbar"><span class="badge">${p.buyerId ? '🙋 ' : '🚗 '}${esc(label)}</span>
+      <button onclick="go('matches')">✕ Clear filter</button></div>` : ''}
+    <div class="toolbar">
+      <input id="m_q" placeholder="🔍 Name / phone / model / ID" oninput="renderMatches()">
+      <select id="m_st" onchange="renderMatches()">${opts(S.lists.MATCH_STATUS, '', 'All statuses')}</select>
+      <select id="m_min" onchange="renderMatches()">
+        <option value="0">Any score</option><option value="50" selected>50+</option>
+        <option value="70">70+</option><option value="85">85+</option></select>
+      <label class="check"><input type="checkbox" id="m_closed" onchange="loadMatches()"> Include closed / rejected</label>
+      <button class="btn" onclick="refreshAll(this)">🔄 Re-match all</button>
+    </div>
+    <div id="list" class="grid"><div class="loading">Loading…</div></div>`);
+  loadMatches();
+}
+async function loadMatches() {
+  const p = S.params;
+  const r = await call('getMatches', { buyerId: p.buyerId || '', vehicleId: p.vehicleId || '',
+    minScore: 0, includeClosed: $('m_closed').checked });
+  if (!r || S.view !== 'matches') return;
+  S.matches = r.matches; registerMatches(r.matches);
+  renderMatches();
+}
+function renderMatches() {
+  const q = norm($('m_q').value), st = $('m_st').value, min = Number($('m_min').value);
+  const list = S.matches.filter(m => m.score >= min && (!st || m.status === st) &&
+    (!q || norm([m.matchId, m.buyer.buyer_id, m.buyer.name, m.buyer.phone, m.vehicle.vehicle_id,
+      m.vehicle.owner_name, m.vehicle.owner_phone, m.vehicle.make, m.vehicle.model,
+      m.buyer.officer && m.buyer.officer.name, m.vehicle.officer && m.vehicle.officer.name].join(' ')).includes(q)));
+  $('list').innerHTML = list.map(matchCard).join('') || '<div class="empty">No matches</div>';
+}
+async function refreshAll(btn) {
+  btn.disabled = true; toast('Matching…');
+  const r = await call('refreshMatches');
+  btn.disabled = false;
+  if (r) { toast(`✅ ${r.added} new, ${r.updated} updated`); loadMatches(); }
+}
+
+function registerMatches(list) { list.forEach(m => S.mIndex[m.matchId] = m); }
+
+/** only = 'vehicle' | 'buyer' → show just that side (used after saving a call). */
+function matchCard(m, only) {
+  const b = m.buyer, v = m.vehicle, id = esc(m.matchId);
+  const cls = m.score >= 80 ? 'hi' : m.score >= 60 ? 'mid' : 'lo';
+  const car = carName(v);
+  const waB = `ආයුබෝවන් ${b.name || ''}, ඔබ සොයන ආකාරයේ ${car} වාහනයක් විකිණීමට තිබෙනවා. මිල ${lkSi(v.price)}. වැඩි විස්තර අවශ්‍යද?`;
+  const waS = `ආයුබෝවන් ${v.owner_name || ''}, ඔබගේ ${car} වාහනය මිලදී ගැනීමට කැමති ගැනුම්කරුවෙක් සිටිනවා. එය තවමත් විකිණීමට තිබෙනවාද?`;
+  // Messages to the other officer (their customer is hidden)
+  const waBO = `ආයුබෝවන් ${b.officer && b.officer.name || ''}, ඔබගේ ගැනුම්කරු සොයන ${wantSi(b)} සඳහා ගැලපෙන වාහනයක් මා සතුව තිබෙනවා — ${car}, ${lkSi(v.price)}. ඔවුන් සම්බන්ධ කර දිය හැකිද?`;
+  const waSO = `ආයුබෝවන් ${v.officer && v.officer.name || ''}, ඔබගේ ${car} වාහනය (${lkSi(v.price)}) මිලදී ගැනීමට කැමති ගැනුම්කරුවෙක් මා සතුව සිටිනවා. එය තවමත් විකිණීමට තිබෙනවාද?`;
+  const mineTag = '<span class="mine-tag">Your customer</span>';
+  return `<div class="card match">
+    <div class="top"><span class="score ${cls}">${m.score}%</span>
+      <span class="badge">${esc(m.status)}</span></div>
+    <div class="reasons">${m.reasons.map(r => `<span>${esc(r)}</span>`).join('')}</div>
+    ${only === 'vehicle' ? '' : `<div class="side b">
+      <h4>🙋 Buyer · ${esc(b.buyer_id)}${b.mine ? mineTag : ''}</h4>
+      ${b.masked ? '' : `<div class="main">${esc(b.name || '-')}</div>`}
+      <div class="sub">Looking for: ${esc(wantName(b))} · Budget ${esc(lk(b.max_budget))}${b.district ? ' · 📍' + esc(b.district) : ''}</div>
+      ${b.masked ? officerBlock(b.officer, waBO, '👮 Buyer\'s officer — contact the buyer through them')
+                 : `<div class="actions">${phoneBtns(b.phone, waB)}</div>`}
+    </div>`}
+    ${only === 'buyer' ? '' : `<div class="side s">
+      <h4>🚗 Vehicle · ${esc(v.vehicle_id)}${v.mine ? mineTag : ''}</h4>
+      <div class="main">${esc(car || '-')} — ${esc(lk(v.price))}</div>
+      <div class="sub">${[v.masked ? '' : v.owner_name, v.mileage ? v.mileage + ' km' : '', v.fuel, v.transmission, v.condition, v.district ? '📍' + v.district : ''].filter(Boolean).map(esc).join(' · ')}</div>
+      ${photoLink(v) ? `<div class="actions">${photoLink(v)}</div>` : ''}
+      ${v.masked ? officerBlock(v.officer, waSO, '👮 Seller\'s officer — contact the seller through them')
+                 : `<div class="actions">${phoneBtns(v.owner_phone, waS)}</div>`}
+    </div>`}
+    <div class="medit">
+      <select id="ms_${id}">${opts(S.lists.MATCH_STATUS, m.status)}</select>
+      <button class="btn green sm" onclick="saveMatch('${id}', this)">Save</button>
+      <textarea id="mn_${id}" placeholder="Notes (e.g. Coming to inspect on Saturday)">${esc(m.notes)}</textarea>
+    </div>
+    <div class="meta">${id}${m.updatedAt ? ' · Update: ' + esc(m.updatedAt) : ''}</div>
+  </div>`;
+}
+
+async function saveMatch(id, btn) {
+  const status = $('ms_' + id).value, notes = $('mn_' + id).value;
+  if (status === 'Deal ✅' && !confirm('Mark this as a deal? The buyer will be set to Bought and the vehicle to Sold.')) return;
+  btn.disabled = true;
+  const r = await call('updateMatch', { matchId: id, status, notes });
+  btn.disabled = false;
+  if (!r) return;
+  const m = S.mIndex[id]; if (m) Object.assign(m, { status, notes });
+  toast(r.closed ? '🤝 Deal saved! Buyer and vehicle closed' : '✅ Saved');
+  if (r.closed) go(S.view, S.params);
+}
+
+/* ============================================================
+ *  SETTINGS
+ * ============================================================ */
+function viewSettings() {
+  setMain(`
+    <div class="narrow">
+      <div class="card">
+        <h2 style="margin-top:0">👮 My officer profile</h2>
+        <p class="muted">Other officers see this name and number when your customers match theirs.</p>
+        <form class="form" onsubmit="saveProfile(event)">
+          <label class="f req"><span>Display name</span><input id="pf_n" value="${esc(S.user.full_name)}" required></label>
+          <label class="f req"><span>Phone</span><input id="pf_p" type="tel" inputmode="tel" value="${esc(S.user.phone || '')}" placeholder="07XXXXXXXX" required></label>
+          <div class="full"><button class="btn primary">Save profile</button></div>
+        </form>
+      </div>
+      <div class="card" style="margin-top:14px">
+        <h2 style="margin-top:0">🔑 Change password</h2>
+        <form class="form" onsubmit="changePw(event)">
+          <label class="f"><span>Current password</span><input type="password" id="pw_old" required></label>
+          <label class="f"><span>New password</span><input type="password" id="pw_new" minlength="6" required></label>
+          <div class="full"><button class="btn primary">Update</button></div>
+        </form>
+      </div>
+      ${S.user.role === 'admin' ? `
+      <div class="card" style="margin-top:14px">
+        <h2 style="margin-top:0">👥 Add a new user</h2>
+        <form class="form" onsubmit="addUser(event)">
+          <label class="f"><span>Username</span><input id="nu_u" required pattern="[a-zA-Z0-9._\\-]{3,}"></label>
+          <label class="f"><span>Full name</span><input id="nu_n"></label>
+          <label class="f req"><span>Mobile number</span><input id="nu_ph" type="tel" inputmode="tel" placeholder="07XXXXXXXX" required></label>
+          <label class="f"><span>Password</span><input type="password" id="nu_p" minlength="6" required></label>
+          <label class="f"><span>Role</span><select id="nu_r"><option value="staff">Staff</option><option value="admin">Admin</option></select></label>
+          <div class="full"><button class="btn primary">Add user</button></div>
+        </form>
+      </div>
+      <div class="card" style="margin-top:14px">
+        <h2 style="margin-top:0">👥 Users</h2>
+        <p class="muted">Edit a user's name, mobile number, role or status. Type a new password only if you want to reset it.</p>
+        <div class="uwrap" id="usersBox"><div class="loading">Loading…</div></div>
+      </div>` : ''}
+      <div class="card" style="margin-top:14px">
+        <h2 style="margin-top:0">🚗 Add vehicle makes & models</h2>
+        <p class="muted">New makes/models typed in a vehicle form are also added automatically when you save.</p>
+        <form class="form" onsubmit="addMaster(event)">
+          <label class="f req"><span>Vehicle type</span><select id="mm_t" required>${opts(S.lists.VEHICLE_TYPE, '', '— Select —')}</select></label>
+          <label class="f req"><span>Make (Brand)</span><input id="mm_m" list="mm_dl" required placeholder="e.g. Toyota"><datalist id="mm_dl">${uniq(S.master.map(x => x.make)).map(x => `<option value="${esc(x)}">`).join('')}</datalist></label>
+          <label class="f full"><span>Models <span class="muted">(comma separated — leave blank to add only the make)</span></span>
+            <input id="mm_models" placeholder="e.g. Aqua, Axio, Vitz"></label>
+          <div class="full"><button class="btn primary">Add to list</button></div>
+        </form>
+      </div>
+      <div class="card" style="margin-top:14px">
+        <h2 style="margin-top:0">ℹ️ Editing dropdowns</h2>
+        <p class="muted">Lists such as District, Fuel and Status are in the <b>DROPDOWN_LISTS</b> sheet of the Google Sheet.
+        Make/Model are in the <b>VEHICLE_MASTER</b> sheet. Refresh this page after making changes.</p>
+      </div>
+    </div>`);
+  if (S.user.role === 'admin') loadUsers();
+}
+
+async function loadUsers() {
+  const r = await call('listUsers');
+  if (!r || !$('usersBox')) return;
+  $('usersBox').innerHTML = `<table class="utable">
+    <tr><th>Username</th><th>Name</th><th>Mobile</th><th>Role</th><th>Active</th><th>Reset password</th><th></th></tr>
+    ${r.users.map(u => { const k = esc(u.username); return `<tr>
+      <td><b>${k}</b>${u.pending ? ' <span class="badge off">⏳ Pending</span>' : ''}</td>
+      <td><input id="u_n_${k}" value="${esc(u.full_name)}"></td>
+      <td><input id="u_p_${k}" type="tel" value="${esc(u.phone)}" placeholder="07XXXXXXXX" style="min-width:120px"></td>
+      <td><select id="u_r_${k}">${opts(['staff', 'admin'], u.role)}</select></td>
+      <td><label class="check"><input type="checkbox" id="u_a_${k}" ${u.active ? 'checked' : ''}>${u.pending ? ' Approve' : ''}</label></td>
+      <td><input id="u_pw_${k}" type="password" placeholder="(unchanged)" minlength="6"></td>
+      <td><button class="btn green sm" onclick="saveUser('${k}', this)">Save</button></td></tr>`; }).join('')}
+  </table>`;
+}
+async function saveUser(k, btn) {
+  btn.disabled = true;
+  const r = await call('updateUser', { username: k, full_name: $('u_n_' + k).value, phone: $('u_p_' + k).value,
+    role: $('u_r_' + k).value, active: $('u_a_' + k).checked, newPassword: $('u_pw_' + k).value });
+  btn.disabled = false;
+  if (r) { toast('✅ User updated'); loadUsers(); }
+}
+async function addMaster(e) {
+  e.preventDefault();
+  const r = await call('addMaster', { vehicle_type: $('mm_t').value, make: $('mm_m').value, models: $('mm_models').value });
+  if (!r) return;
+  S.master = r.master;
+  toast(r.added ? `✅ Added ${r.added} item(s) to the list` : 'ℹ️ Already in the list');
+  $('mm_models').value = '';
+}
+async function saveProfile(e) {
+  e.preventDefault();
+  const r = await call('updateProfile', { full_name: $('pf_n').value, phone: $('pf_p').value });
+  if (!r) return;
+  S.user.full_name = r.full_name; S.user.phone = r.phone;
+  document.querySelector('.who .uname').textContent = '👤 ' + r.full_name;
+  toast('✅ Profile saved');
+}
+async function changePw(e) {
+  e.preventDefault();
+  const r = await call('changePassword', { oldPassword: $('pw_old').value, newPassword: $('pw_new').value });
+  if (r) { toast('✅ Password changed'); e.target.reset(); }
+}
+async function addUser(e) {
+  e.preventDefault();
+  const r = await call('addUser', { username: $('nu_u').value, full_name: $('nu_n').value,
+    password: $('nu_p').value, role: $('nu_r').value, phone: $('nu_ph').value });
+  if (r) { toast('✅ User added'); e.target.reset(); loadUsers(); }
+}
+
+boot();
+window.__vmStarted = true;
+</script>
+</body>
+</html>
