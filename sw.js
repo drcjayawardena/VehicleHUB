@@ -2,7 +2,7 @@
  * Network first: you always get the newest version when online.
  * If offline, the last saved copy of the page opens (data still needs internet).
  * API calls to Google are never cached. */
-const CACHE = 'vehicle-match-v1';
+const CACHE = 'vehiclehub-v2';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
