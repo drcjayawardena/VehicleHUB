@@ -215,13 +215,16 @@
     });
   </script>
 
+  <script src="config.js"></script>
   <script>
     /* ============================================================
      *  WEBSITE MODE (GitHub Pages)
-     *  Paste your Apps Script web app URL (ends with /exec) below.
+     *  The Apps Script web app URL (ends with /exec) is read from config.js,
+     *  so index.html can be replaced in future updates without editing it.
+     *  (You may also paste the URL below instead.)
      *  Inside Apps Script this block is ignored automatically.
      * ============================================================ */
-    window.VM_API_URL = 'PASTE_YOUR_WEB_APP_URL_HERE';
+    window.VM_API_URL = window.VM_API_URL || 'PASTE_YOUR_WEB_APP_URL_HERE';
 
     (function () {
       if (window.google && google.script && google.script.run) return; // running inside Apps Script
@@ -236,7 +239,7 @@
               var args = Array.prototype.slice.call(arguments);
               var url = window.VM_API_URL;
               if (!url || url.indexOf('/exec') < 0) {
-                if (fail) fail(new Error('API URL is not set. Open index.html and paste your Apps Script web app URL into VM_API_URL.'));
+                if (fail) fail(new Error('API URL is not set. Create config.js on GitHub with your Apps Script web app URL (see the setup guide).'));
                 return;
               }
               fetch(url, {
