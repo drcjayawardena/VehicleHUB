@@ -1098,22 +1098,17 @@ function viewBuyerForm() {
         <div class="sec">${ic('user')} Details</div>
         ${fld('b', 'name', 'Name', b.name, 'required', 'req')}
         ${fld('b', 'phone', 'Phone', b.phone, 'type="tel" inputmode="tel" required', 'req')}
-        ${fld('b', 'phone2', 'Phone 2', b.phone2, 'type="tel" inputmode="tel"')}
-        ${sel('b', 'district', 'Preferred district', S.lists.DISTRICT, b.district, 'Any')}
 
         <div class="sec">${ic('car')} Vehicle wanted <span class="muted">(leave blank = any)</span></div>
         ${vehiclePickers('b', b, 'Any')}
         ${fld('b', 'year_from', 'Year (from)', b.year_from, `type="number" min="1970" max="${yr + 1}" placeholder="2014"`)}
         ${fld('b', 'year_to', 'Year (to)', b.year_to, `type="number" min="1970" max="${yr + 1}" placeholder="${yr}"`)}
-        ${sel('b', 'fuel', 'Fuel', S.lists.FUEL, b.fuel, 'Any')}
-        ${sel('b', 'transmission', 'Transmission', S.lists.TRANSMISSION, b.transmission, 'Any')}
 
         <div class="sec">${ic('tag')} Budget (in Lakhs)</div>
         ${fld('b', 'min_budget', 'Minimum (Lakhs)', b.min_budget, 'type="number" step="0.1" min="0" placeholder="50"')}
         ${fld('b', 'max_budget', 'Maximum (Lakhs)', b.max_budget, 'type="number" step="0.1" min="0" placeholder="65" required', 'req')}
         ${id ? sel('b', 'status', 'Status', S.lists.BUYER_STATUS, b.status) : ''}
 
-        <label class="f full"><span>Notes</span><textarea id="b_notes" placeholder="e.g. Buying on leasing, colour doesn't matter">${esc(b.notes)}</textarea></label>
         <div class="full row"><button class="btn green big" id="b_save">${ic('save')} Save & view matches</button></div>
       </form>
     </div>
@@ -1126,6 +1121,11 @@ async function saveBuyer(e) {
   e.preventDefault();
   const d = collect('b', BUYER_FIELDS);
   d.buyer_id = S.params.id || '';
+  // Fields removed from the form: keep an existing buyer's Phone 2 and notes;
+  // district / fuel / transmission stay blank (= any), so no hidden filter limits matching.
+  const old = d.buyer_id ? (S.rec[d.buyer_id] || {}) : {};
+  d.phone2 = old.phone2 || '';
+  d.notes = old.notes || '';
   const btn = $('b_save'); btn.disabled = true;
   const r = await call('saveBuyer', d);
   btn.disabled = false;
