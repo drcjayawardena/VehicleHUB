@@ -1154,15 +1154,10 @@ function viewVehicleForm() {
         <div class="sec">${ic('user')} Owner</div>
         ${fld('v', 'owner_name', 'Name', v.owner_name, 'required', 'req')}
         ${fld('v', 'owner_phone', 'Phone', v.owner_phone, 'type="tel" inputmode="tel" required', 'req')}
-        ${fld('v', 'phone2', 'Phone 2', v.phone2, 'type="tel" inputmode="tel"')}
-        ${sel('v', 'district', 'District', S.lists.DISTRICT, v.district, '— Select —')}
 
         <div class="sec">${ic('car')} Vehicle</div>
         ${vehiclePickers('v', v)}
         ${fld('v', 'year', 'Year (YOM)', v.year, `type="number" min="1970" max="${yr + 1}" placeholder="2015"`)}
-        ${fld('v', 'mileage', 'Mileage (km)', v.mileage, 'type="number" min="0" placeholder="85000"')}
-        ${sel('v', 'fuel', 'Fuel', S.lists.FUEL, v.fuel, '— Select —')}
-        ${sel('v', 'transmission', 'Transmission', S.lists.TRANSMISSION, v.transmission, '— Select —')}
         ${sel('v', 'condition', 'Condition', S.lists.CONDITION, v.condition, '— Select —')}
         ${fld('v', 'color', 'Color', v.color, 'placeholder="White"')}
 
@@ -1173,8 +1168,6 @@ function viewVehicleForm() {
             : (v.status === 'Pending' || v.status === 'Rejected'
                 ? `<label class="f"><span>Status</span><div>${statusBadge(v.status, [])} <span class="muted">${v.status === 'Rejected' ? 'Saving again sends it back for approval' : 'Waiting for admin approval'}</span></div></label>`
                 : sel('v', 'status', 'Status', (S.lists.VEHICLE_STATUS || []).filter(x => x !== 'Pending' && x !== 'Rejected'), v.status)))}
-
-        <label class="f full"><span>Notes</span><textarea id="v_notes" placeholder="e.g. Has an active lease, first owner">${esc(v.notes)}</textarea></label>
 
         <div class="sec">${ic('camera')} Photos</div>
         <div class="full photo-pick">
@@ -1194,6 +1187,10 @@ async function saveVehicle(e) {
   e.preventDefault();
   const d = collect('v', VEHICLE_FIELDS);
   d.vehicle_id = S.params.id || '';
+  // Fields removed from the form: keep whatever an existing vehicle already has
+  // (notes also hold the admin's rejection reason).
+  const old = d.vehicle_id ? (S.rec[d.vehicle_id] || {}) : {};
+  ['phone2', 'district', 'mileage', 'fuel', 'transmission', 'notes'].forEach(f => { d[f] = old[f] == null ? '' : String(old[f]); });
   const btn = $('v_save'); btn.disabled = true;
   const r = await call('saveVehicle', d);
   btn.disabled = false;
