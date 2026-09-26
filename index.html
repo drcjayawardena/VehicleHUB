@@ -1490,7 +1490,7 @@ async function viewMatches() {
       <select id="m_min" onchange="renderMatches()">
         <option value="0">Any score</option><option value="50" selected>50+</option>
         <option value="70">70+</option><option value="85">85+</option></select>
-      <label class="check"><input type="checkbox" id="m_closed" onchange="loadMatches()" ${p.deals ? 'checked' : ''}> Include closed / rejected</label>
+      <label class="check"><input type="checkbox" id="m_closed" onchange="loadMatches()" ${p.deals ? 'checked' : ''}> Show closed deals &amp; rejected</label>
       <button class="btn" onclick="refreshAll(this)">${ic('refresh')} Re-match all</button>
     </div>
     <div id="list" class="grid">${skeleton(4)}</div>`);
