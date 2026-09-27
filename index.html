@@ -408,6 +408,7 @@ const ICONS = {
   approve: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/>',
   ban: '<circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>',
   newItem: '<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>',
+  inbox: '<polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>',
   facebook: '<path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/>'
 };
 const ic = (name, cls) => '<svg class="ic' + (cls ? ' ' + cls : '') + '" viewBox="0 0 24 24" aria-hidden="true">' + (ICONS[name] || '') + '</svg>';
@@ -844,10 +845,10 @@ async function boot() {
   applyInit(r);
 }
 
-const APP_VERSION = '3.3';   // must match APP.VERSION in Code.gs
+const APP_VERSION = '3.4';   // must match APP.VERSION in Code.gs
 
 function applyInit(r) {
-  S.user = r.user; S.lists = r.lists; S.master = r.master;
+  S.user = r.user; S.lists = r.lists; S.master = r.master; S.formUrl = r.formUrl || '';
   renderShell();
   checkVersions(r.versions);
   go('dashboard');
@@ -957,7 +958,7 @@ function logout(silent) {
  *  SHELL + ROUTER
  * ============================================================ */
 const TABS = [
-  ['dashboard', 'home', 'Dashboard'], ['newcall', 'phone', 'New Call'], ['buyers', 'user', 'Buyers'],
+  ['dashboard', 'home', 'Dashboard'], ['newcall', 'phone', 'New Call'], ['leads', 'inbox', 'Requests'], ['buyers', 'user', 'Buyers'],
   ['vehicles', 'car', 'Vehicles'], ['matches', 'link', 'Matches'], ['deals', 'award', 'Deals'], ['approvals', 'approve', 'Approvals', 'admin'],
   ['settings', 'settings', 'Settings']
 ];
@@ -989,7 +990,7 @@ function go(view, params) {
   window.scrollTo(0, 0);
   ({ dashboard: viewDashboard, newcall: viewNewCall, buyers: viewBuyers, vehicles: viewVehicles,
      matches: viewMatches, settings: viewSettings, buyerForm: viewBuyerForm, vehicleForm: viewVehicleForm,
-     results: viewResults, approvals: viewApprovals, deals: viewDeals
+     results: viewResults, approvals: viewApprovals, deals: viewDeals, leads: viewLeads
   })[view]();
 }
 
@@ -1003,7 +1004,9 @@ async function viewDashboard() {
   const s = d.stats;
   registerMatches(d.topNew);
   setNavCount('approvals', d.pendingVehicles);
+  setNavCount('leads', s.newLeads);
   setMain(`
+    ${s.newLeads ? `<div class="notice">${ic('inbox')} ${s.newLeads} new customer request(s) from the website — <a href="#" onclick="go('leads');return false">call them now</a>.</div>` : ''}
     ${d.pendingVehicles ? `<div class="notice">${ic('approve')} ${d.pendingVehicles} vehicle(s) waiting for your approval — <a href="#" onclick="go('approvals');return false">review now</a>.</div>` : ''}
     ${d.pendingUsers ? `<div class="notice">${ic('users')} ${d.pendingUsers} new user(s) waiting for approval — <a href="#" onclick="go('settings');return false">review in Settings → Users</a>.</div>` : ''}
     ${!S.user.email ? `<div class="notice">${ic('message')} Add your email in <a href="#" onclick="go('settings');return false">Settings</a> to get an email when a new match is found for your customers.</div>` : ''}
@@ -1014,6 +1017,7 @@ async function viewDashboard() {
       <div class="tile" onclick="go('matches')"><b>${s.newMatches}</b><span>${ic('star')} New matches</span></div>
       <div class="tile" onclick="go('matches')"><b>${s.inProgress}</b><span>${ic('clock')} In progress</span></div>
       <div class="tile" onclick="go('deals')"><b>${s.dealsThisMonth}</b><span>${ic('award')} Deals this month</span></div>
+      <div class="tile" onclick="go('leads')"><b>${s.newLeads || 0}</b><span>${ic('inbox')} New requests</span></div>
     </div>
     <div class="row" style="margin-top:14px">
       <button class="btn primary big" onclick="go('newcall')">${ic('phone')} Add a new call</button>
@@ -1105,11 +1109,12 @@ const BUYER_FIELDS = ['name', 'phone', 'phone2', 'vehicle_type', 'make', 'model'
 
 function viewBuyerForm() {
   const id = S.params.id;
-  const b = id ? (S.rec[id] || {}) : { phone: S.params.phone || '', status: 'Active' };
+  const b = id ? (S.rec[id] || {}) : Object.assign({ phone: S.params.phone || '', status: 'Active' }, S.params.prefill || {});
   const yr = new Date().getFullYear();
   setMain(`
     <div class="card narrow">
       <h2 style="margin-top:0" id="bf_title">${id ? ic('edit', 'h') + ' Buyer edit — ' + esc(id) : ic('user', 'h') + ' New Buyer'}</h2>
+      ${S.params.lead ? `<div class="notice">${ic('inbox')} From website request ${esc(S.params.lead)} — check the details with the customer, then save.</div>` : ''}
       <form class="form" onsubmit="saveBuyer(event)">
         <div class="sec">${ic('user')} Details</div>
         ${fld('b', 'name', 'Name', b.name, 'required', 'req')}
@@ -1140,7 +1145,8 @@ async function saveBuyer(e) {
   d.buyer_id = S.params.id || '';
   // Fields removed from the form: keep an existing buyer's Phone 2 and notes;
   // district / fuel / transmission stay blank (= any), so no hidden filter limits matching.
-  const old = d.buyer_id ? (S.rec[d.buyer_id] || {}) : {};
+  const old = d.buyer_id ? (S.rec[d.buyer_id] || {}) : (S.params.prefill || {});
+  d.lead_id = d.buyer_id ? '' : (S.params.lead || '');
   d.phone2 = old.phone2 || '';
   d.notes = old.notes || '';
   const btn = $('b_save'); btn.disabled = true;
@@ -1167,6 +1173,119 @@ async function deleteRecord(kind, id) {
 }
 
 /* ============================================================
+ *  CUSTOMER REQUESTS (LEADS) — from the public request form
+ * ============================================================ */
+function myFormLink() { return (S.formUrl || '') + '?ref=' + encodeURIComponent(S.user.username); }
+function waShareLink() {
+  const t = 'ඔබට වාහනයක් ගන්න හෝ විකුණන්න අවශ්‍යද? මෙතනින් විස්තර එවන්න — අපි ඔබව අමතන්නම්. / Want to buy or sell a vehicle? Send your details here: ' + myFormLink();
+  return 'https:/' + '/wa.me/?text=' + encodeURIComponent(t);
+}
+function copyMyLink() {
+  const el = $('my_link'); el.select();
+  (navigator.clipboard ? navigator.clipboard.writeText(el.value) : Promise.reject()).then(() => toast('Link copied'), () => { document.execCommand('copy'); toast('Link copied'); });
+}
+
+async function viewLeads() {
+  const st = S.params.status || 'open';
+  setMain(`
+    <div class="toolbar">
+      <select id="ld_st" onchange="go('leads',{status:this.value})">
+        ${[['open', 'Open (New + Contacted)'], ['New', 'New'], ['Contacted', 'Contacted'], ['Converted', 'Converted'], ['Rejected', 'Rejected'], ['all', 'All']]
+          .map(o => `<option value="${o[0]}" ${o[0] === st ? 'selected' : ''}>${o[1]}</option>`).join('')}
+      </select>
+      <button class="btn" onclick="copyMyLink2()">${ic('inbox')} Copy my request link</button>
+    </div>
+    <div id="list" class="grid">${skeleton(3)}</div>`);
+  const r = await call('listLeads', { status: st });
+  if (!r || S.view !== 'leads') return;
+  S.leads = {}; r.leads.forEach(l => S.leads[l.lead_id] = l);
+  S.leadOfficers = r.officers || [];
+  $('list').innerHTML = r.leads.map(leadCard).join('') || '<div class="empty">No customer requests here</div>';
+  setNavCount('leads', r.leads.filter(l => l.status === 'New').length || '');
+}
+function copyMyLink2() {
+  const t = myFormLink();
+  (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => toast('Link copied: ' + t), () => prompt('Copy this link:', t));
+}
+
+function leadCard(l) {
+  const buyer = l.type === 'buyer';
+  const age = l.age_hours === '' ? '' : (l.age_hours < 1 ? 'just now' : l.age_hours < 48 ? l.age_hours + ' h ago' : Math.floor(l.age_hours / 24) + ' days ago');
+  const late = l.status === 'New' && Number(l.age_hours) >= 2;
+  const si = l.lang !== 'en';
+  const wa = si
+    ? `ආයුබෝවන් ${l.name}, VehicleHub වෙත ඔබ එවූ ඉල්ලීම (${l.lead_id}) ලැබුණා. මම ${S.user.full_name}. ${buyer ? 'ඔබ සොයන වාහනය' : 'ඔබගේ වාහනය'} ගැන කතා කරන්න ඔබට පහසු වෙලාවක් කියන්න පුළුවන්ද?`
+    : `Hello ${l.name}, this is ${S.user.full_name} from VehicleHub about your request ${l.lead_id}. When is a good time to talk?`;
+  const open = l.status === 'New' || l.status === 'Contacted';
+  return `<div class="card rec ${buyer ? 'buyer' : 'seller'}">
+    <div class="top"><div>
+      <div class="title">${esc(l.name)} <span class="badge ${buyer ? '' : 'warn'}">${buyer ? 'Buyer' : 'Seller'}</span></div>
+      <div class="muted">${esc(l.lead_id)} · ${esc(fmtDT(l.created_at))}${age ? ' · ' + esc(age) : ''}${late ? ` · <b style="color:#c0392b">waiting — call now</b>` : ''}</div></div>
+      ${statusBadge(l.status, ['New'])}</div>
+    <div>${ic(buyer ? 'search' : 'car')} ${esc(l.summary)}</div>
+    ${l.notes ? `<div class="sub">${ic('note')} ${esc(l.notes)}</div>` : ''}
+    <div class="sub">${ic('globe')} ${l.ref ? 'Via link of ' + esc(l.ref) : 'General link (round-robin)'}${l.source ? ' · source: ' + esc(l.source) : ''}${l.email ? ' · ' + esc(l.email) : ''} · ${si ? 'සිංහල' : 'English'}</div>
+    ${l.status === 'Rejected' && l.reject_reason ? `<div class="sub">${ic('ban')} ${esc(l.reject_reason)}</div>` : ''}
+    ${l.status === 'Converted' ? `<div class="sub">${ic('check')} Saved as ${esc(l.converted_id)}</div>` : ''}
+    <div class="actions">
+      ${phoneBtns(l.phone, wa)}
+      ${Number(l.photo_count) ? `<button class="btn sm" onclick="showLeadPhotos('${esc(l.lead_id)}')">${ic('camera')} Photos (${esc(l.photo_count)})</button>` : ''}
+      ${open ? `
+        ${l.status === 'New' ? `<button class="btn sm" onclick="setLead('${esc(l.lead_id)}','Contacted')">${ic('check')} Mark contacted</button>` : ''}
+        <button class="btn sm green" onclick="convertLead('${esc(l.lead_id)}')">${ic(buyer ? 'user' : 'car')} Save as ${buyer ? 'Buyer' : 'Vehicle'}</button>
+        <button class="btn sm red" onclick="rejectLead('${esc(l.lead_id)}')">${ic('ban')} Reject</button>` : ''}
+    </div>
+    ${S.user.role === 'admin' && open ? `<div class="row" style="margin-top:8px"><span class="muted">${ic('shield')} Assigned to</span>
+      <select onchange="reassignLead('${esc(l.lead_id)}', this.value)">
+        ${(S.leadOfficers || []).map(o => `<option value="${esc(o.username)}" ${String(o.username).toLowerCase() === String(l.assigned_to).toLowerCase() ? 'selected' : ''}>${esc(o.name)}</option>`).join('')}
+        ${!l.assigned_to ? '<option value="" selected>— Nobody —</option>' : ''}
+      </select></div>`
+      : (l.assigned_name ? `<div class="muted">${ic('shield')} ${esc(l.assigned_name)}</div>` : '')}
+  </div>`;
+}
+
+async function setLead(id, status, reason) {
+  const r = await call('updateLead', { leadId: id, status, reason });
+  if (r) { toast('Request ' + id + ': ' + status); go('leads', { status: S.params.status }); }
+}
+function rejectLead(id) {
+  const reason = prompt('Why reject this request? (e.g. fake number, not interested)');
+  if (reason === null) return;
+  setLead(id, 'Rejected', reason);
+}
+async function reassignLead(id, username) {
+  if (!username) return;
+  const r = await call('updateLead', { leadId: id, assignTo: username });
+  if (r) toast('Request ' + id + ' → ' + r.lead.assigned_name);
+}
+function convertLead(id) {
+  const l = S.leads[id]; if (!l) return;
+  const notes = [l.leasing === 'Yes' ? 'Needs leasing.' : '', l.notes || '', '(Website request ' + l.lead_id + ')'].filter(Boolean).join(' ');
+  if (l.type === 'buyer') {
+    go('buyerForm', { phone: l.phone, lead: l.lead_id, prefill: {
+      name: l.name, phone: l.phone, vehicle_type: l.vehicle_type, make: l.make, model: l.model,
+      year_from: l.year_from, year_to: l.year_to, min_budget: l.min_budget, max_budget: l.max_budget, notes } });
+  } else {
+    go('vehicleForm', { phone: l.phone, lead: l.lead_id, prefill: {
+      owner_name: l.name, owner_phone: l.phone, vehicle_type: l.vehicle_type, make: l.make, model: l.model,
+      year: l.year, price: l.price, notes, photo_count: l.photo_count } });
+  }
+}
+async function showLeadPhotos(id) {
+  const r = await call('leadPhotos', { leadId: id });
+  if (!r) return;
+  const back = document.createElement('div');
+  back.className = 'pe-back';
+  back.innerHTML = `<div class="pe" style="max-height:92vh;overflow:auto">
+    <h3>${ic('camera')} Customer photos — ${esc(id)}</h3>
+    ${r.photos.map(u => `<img src="${u}" style="max-width:100%;border-radius:8px;margin:6px 0;display:block">`).join('') || '<div class="empty">No photos</div>'}
+    <div class="row"><button class="btn" id="lp_close">${ic('x')} Close</button></div></div>`;
+  document.body.appendChild(back);
+  back.querySelector('#lp_close').onclick = () => back.remove();
+  back.onclick = e => { if (e.target === back) back.remove(); };
+}
+
+/* ============================================================
  *  VEHICLE FORM
  * ============================================================ */
 const VEHICLE_FIELDS = ['owner_name', 'owner_phone', 'phone2', 'vehicle_type', 'make', 'model', 'year', 'price',
@@ -1174,11 +1293,12 @@ const VEHICLE_FIELDS = ['owner_name', 'owner_phone', 'phone2', 'vehicle_type', '
 
 function viewVehicleForm() {
   const id = S.params.id;
-  const v = id ? (S.rec[id] || {}) : { owner_phone: S.params.phone || '', status: 'Available' };
+  const v = id ? (S.rec[id] || {}) : Object.assign({ owner_phone: S.params.phone || '', status: 'Available' }, S.params.prefill || {});
   const yr = new Date().getFullYear();
   setMain(`
     <div class="card narrow">
       <h2 style="margin-top:0" id="vf_title">${id ? ic('edit', 'h') + ' Vehicle edit — ' + esc(id) : ic('car', 'h') + ' New Vehicle for Sale (Seller)'}</h2>
+      ${S.params.lead ? `<div class="notice">${ic('inbox')} From website request ${esc(S.params.lead)}${Number(v.photo_count) ? ` — the customer's ${esc(v.photo_count)} photo(s) will be attached automatically` : ''}. Check the details, then save.</div>` : ''}
       <form class="form" onsubmit="saveVehicle(event)">
         <div class="sec">${ic('user')} Owner</div>
         ${fld('v', 'owner_name', 'Name', v.owner_name, 'required', 'req')}
@@ -1219,7 +1339,8 @@ async function saveVehicle(e) {
   d.vehicle_id = S.params.id || '';
   // Fields removed from the form: keep whatever an existing vehicle already has
   // (notes also hold the admin's rejection reason).
-  const old = d.vehicle_id ? (S.rec[d.vehicle_id] || {}) : {};
+  const old = d.vehicle_id ? (S.rec[d.vehicle_id] || {}) : (S.params.prefill || {});
+  d.lead_id = d.vehicle_id ? '' : (S.params.lead || '');
   ['phone2', 'district', 'mileage', 'fuel', 'transmission', 'notes'].forEach(f => { d[f] = old[f] == null ? '' : String(old[f]); });
   const btn = $('v_save'); btn.disabled = true;
   const r = await call('saveVehicle', d);
@@ -1617,6 +1738,14 @@ function viewSettings() {
           <div class="full row"><button class="btn primary">Save profile</button>
             <button type="button" class="btn" id="pf_test" onclick="testEmail(this)">${ic('message')} Send test email</button></div>
         </form>
+      </div>
+      <div class="card" style="margin-top:14px">
+        <h2 style="margin-top:0">${ic('inbox', 'h')} My customer request link</h2>
+        <p class="muted">Share this link on Facebook, WhatsApp or as a QR code. Every request sent through it comes straight to you.
+        Requests from the general link (without your name) are shared between officers in turn.</p>
+        <div class="row"><input id="my_link" readonly value="${esc(myFormLink())}" style="flex:1 1 260px">
+          <button type="button" class="btn" onclick="copyMyLink()">${ic('check')} Copy</button>
+          <a class="btn green" target="_blank" rel="noopener" href="${esc(waShareLink())}">${ic('message')} Share on WhatsApp</a></div>
       </div>
       <div class="card" style="margin-top:14px">
         <h2 style="margin-top:0">${ic('key', 'h')} Change password</h2>

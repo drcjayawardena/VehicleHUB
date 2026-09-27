@@ -2,8 +2,8 @@
  * Network first: you always get the newest version when online.
  * If offline, the last saved copy of the page opens (data still needs internet).
  * API calls to Google are never cached. */
-const CACHE = 'vehiclehub-v2';
-const SHELL = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
+const CACHE = 'vehiclehub-v3';
+const SHELL = ['./', './index.html', './config.js', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
@@ -25,4 +25,3 @@ self.addEventListener('fetch', e => {
       .catch(() => caches.match(req).then(r => r || caches.match('./index.html')))
   );
 });
-
