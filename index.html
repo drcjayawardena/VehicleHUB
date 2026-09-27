@@ -844,7 +844,7 @@ async function boot() {
   applyInit(r);
 }
 
-const APP_VERSION = '3.2';   // must match APP.VERSION in Code.gs
+const APP_VERSION = '3.3';   // must match APP.VERSION in Code.gs
 
 function applyInit(r) {
   S.user = r.user; S.lists = r.lists; S.master = r.master;
@@ -895,6 +895,7 @@ function renderRegister() {
       <div class="muted">After you register, the admin must approve your account before you can log in.</div>
       <label class="f req"><span>Full name</span><input id="rg_n" required autocomplete="name"></label>
       <label class="f req"><span>Mobile number</span><input id="rg_p" type="tel" inputmode="tel" placeholder="07XXXXXXXX" required autocomplete="tel"></label>
+      <label class="f req"><span>Email <span class="muted">(for new-match alerts)</span></span><input id="rg_e" type="email" required autocomplete="email" placeholder="name@gmail.com"></label>
       <label class="f req"><span>Username</span><input id="rg_u" required pattern="[a-zA-Z0-9._\-]{3,}" autocomplete="username" placeholder="e.g. kasun"></label>
       <label class="f req"><span>Password</span><input id="rg_pw" type="password" minlength="6" required autocomplete="new-password"></label>
       <label class="f req"><span>Confirm password</span><input id="rg_pw2" type="password" minlength="6" required autocomplete="new-password"></label>
@@ -925,7 +926,7 @@ function doRegister(e) {
       $('rg_err').textContent = String(err.message || err).replace(/^Error:\s*/, '');
       btn.disabled = false;
     })
-    .register({ full_name: $('rg_n').value, phone: $('rg_p').value, username: $('rg_u').value, password: $('rg_pw').value });
+    .register({ full_name: $('rg_n').value, phone: $('rg_p').value, email: $('rg_e').value, username: $('rg_u').value, password: $('rg_pw').value });
 }
 
 function doLogin(e) {
@@ -1005,6 +1006,7 @@ async function viewDashboard() {
   setMain(`
     ${d.pendingVehicles ? `<div class="notice">${ic('approve')} ${d.pendingVehicles} vehicle(s) waiting for your approval — <a href="#" onclick="go('approvals');return false">review now</a>.</div>` : ''}
     ${d.pendingUsers ? `<div class="notice">${ic('users')} ${d.pendingUsers} new user(s) waiting for approval — <a href="#" onclick="go('settings');return false">review in Settings → Users</a>.</div>` : ''}
+    ${!S.user.email ? `<div class="notice">${ic('message')} Add your email in <a href="#" onclick="go('settings');return false">Settings</a> to get an email when a new match is found for your customers.</div>` : ''}
     ${!S.user.phone ? `<div class="notice">${ic('mobile')} Add your phone number in <a href="#" onclick="go('settings');return false">Settings</a> so other officers can contact you about matches.</div>` : ''}
     <div class="tiles">
       <div class="tile" onclick="go('buyers')"><b>${s.activeBuyers}</b><span>${ic('user')} Active buyers</span></div>
@@ -1611,7 +1613,9 @@ function viewSettings() {
         <form class="form" onsubmit="saveProfile(event)">
           <label class="f req"><span>Display name</span><input id="pf_n" value="${esc(S.user.full_name)}" required></label>
           <label class="f req"><span>Phone</span><input id="pf_p" type="tel" inputmode="tel" value="${esc(S.user.phone || '')}" placeholder="07XXXXXXXX" required></label>
-          <div class="full"><button class="btn primary">Save profile</button></div>
+          <label class="f full"><span>Email for new-match alerts <span class="muted">(leave blank to turn alerts off)</span></span><input id="pf_e" type="email" value="${esc(S.user.email || '')}" placeholder="name@gmail.com"></label>
+          <div class="full row"><button class="btn primary">Save profile</button>
+            <button type="button" class="btn" id="pf_test" onclick="testEmail(this)">${ic('message')} Send test email</button></div>
         </form>
       </div>
       <div class="card" style="margin-top:14px">
@@ -1629,6 +1633,7 @@ function viewSettings() {
           <label class="f"><span>Username</span><input id="nu_u" required pattern="[a-zA-Z0-9._\\-]{3,}"></label>
           <label class="f"><span>Full name</span><input id="nu_n"></label>
           <label class="f req"><span>Mobile number</span><input id="nu_ph" type="tel" inputmode="tel" placeholder="07XXXXXXXX" required></label>
+          <label class="f"><span>Email <span class="muted">(match alerts)</span></span><input id="nu_e" type="email" placeholder="name@gmail.com"></label>
           <label class="f"><span>Password</span><input type="password" id="nu_p" minlength="6" required></label>
           <label class="f"><span>Role</span><select id="nu_r"><option value="staff">Staff</option><option value="admin">Admin</option></select></label>
           <div class="full"><button class="btn primary">Add user</button></div>
@@ -1663,11 +1668,12 @@ async function loadUsers() {
   const r = await call('listUsers');
   if (!r || !$('usersBox')) return;
   $('usersBox').innerHTML = `<table class="utable">
-    <tr><th>Username</th><th>Name</th><th>Mobile</th><th>Role</th><th>Active</th><th>Reset password</th><th></th></tr>
+    <tr><th>Username</th><th>Name</th><th>Mobile</th><th>Email</th><th>Role</th><th>Active</th><th>Reset password</th><th></th></tr>
     ${r.users.map(u => { const k = esc(u.username); return `<tr>
       <td><b>${k}</b>${u.pending ? ' <span class="badge warn">Pending</span>' : ''}</td>
       <td><input id="u_n_${k}" value="${esc(u.full_name)}"></td>
       <td><input id="u_p_${k}" type="tel" value="${esc(u.phone)}" placeholder="07XXXXXXXX" style="min-width:120px"></td>
+      <td><input id="u_e_${k}" type="email" value="${esc(u.email)}" placeholder="(no alerts)" style="min-width:170px"></td>
       <td><select id="u_r_${k}">${opts(['staff', 'admin'], u.role)}</select></td>
       <td><label class="check"><input type="checkbox" id="u_a_${k}" ${u.active ? 'checked' : ''}>${u.pending ? ' Approve' : ''}</label></td>
       <td><input id="u_pw_${k}" type="password" placeholder="(unchanged)" minlength="6"></td>
@@ -1676,7 +1682,7 @@ async function loadUsers() {
 }
 async function saveUser(k, btn) {
   btn.disabled = true;
-  const r = await call('updateUser', { username: k, full_name: $('u_n_' + k).value, phone: $('u_p_' + k).value,
+  const r = await call('updateUser', { username: k, full_name: $('u_n_' + k).value, phone: $('u_p_' + k).value, email: $('u_e_' + k).value,
     role: $('u_r_' + k).value, active: $('u_a_' + k).checked, newPassword: $('u_pw_' + k).value });
   btn.disabled = false;
   if (r) { toast('User updated'); loadUsers(); }
@@ -1691,11 +1697,18 @@ async function addMaster(e) {
 }
 async function saveProfile(e) {
   e.preventDefault();
-  const r = await call('updateProfile', { full_name: $('pf_n').value, phone: $('pf_p').value });
+  const r = await call('updateProfile', { full_name: $('pf_n').value, phone: $('pf_p').value, email: $('pf_e').value });
   if (!r) return;
-  S.user.full_name = r.full_name; S.user.phone = r.phone;
+  S.user.full_name = r.full_name; S.user.phone = r.phone; S.user.email = r.email;
   $('unameText').textContent = r.full_name;
   toast('Profile saved');
+}
+async function testEmail(btn) {
+  if (($('pf_e').value || '').trim().toLowerCase() !== (S.user.email || '')) { toast('Save your profile first', true); return; }
+  btn.disabled = true;
+  const r = await call('testEmail');
+  btn.disabled = false;
+  if (r) toast('Test email sent to ' + r.email);
 }
 async function changePw(e) {
   e.preventDefault();
@@ -1705,7 +1718,7 @@ async function changePw(e) {
 async function addUser(e) {
   e.preventDefault();
   const r = await call('addUser', { username: $('nu_u').value, full_name: $('nu_n').value,
-    password: $('nu_p').value, role: $('nu_r').value, phone: $('nu_ph').value });
+    password: $('nu_p').value, role: $('nu_r').value, phone: $('nu_ph').value, email: $('nu_e').value });
   if (r) { toast('User added'); e.target.reset(); loadUsers(); }
 }
 
