@@ -60,6 +60,7 @@
   .photos .ph button { position: absolute; top: -6px; right: -6px; width: 24px; height: 24px; border-radius: 50%; border: 0; background: var(--bad); color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; }
   .photos .ph button .ic { width: 14px; height: 14px; stroke-width: 3; }
   .muted { color: var(--mut); font-size: 13px; }
+  .about { display: flex; gap: 10px; align-items: center; background: #eef3ff; color: var(--p); border-radius: 12px; padding: 10px 12px; margin: 4px 0 12px; font-size: 14px; }
   .done { text-align: center; }
   .ref { display: inline-block; background: #eef3ff; color: var(--p); font-weight: 800; font-size: 20px; padding: 6px 16px; border-radius: 10px; margin: 6px 0 12px; }
   .foot { text-align: center; font-size: 12px; color: var(--mut); margin: 18px 0 30px; }
@@ -94,6 +95,13 @@
   var SRC = (qs.get('src') || qs.get('utm_source') || '').trim();
   var lang = 'en';
   var MAX_PHOTOS = 5;
+  // Coming from the showroom: ?type=buyer&about=V0001&make=..&model=..&vtype=..&year=..&price=..
+  //                  or Wanted: ?type=seller&about=B0003&make=..&model=..&vtype=..
+  var ABOUT = (qs.get('about') || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 12);
+  var PRE = { make: qs.get('make') || '', model: qs.get('model') || '', vehicle_type: qs.get('vtype') || '',
+              year: qs.get('year') || '', year_from: qs.get('year') || '', year_to: qs.get('year') || '',
+              max_budget: qs.get('price') || '' };
+  var START_TYPE = qs.get('type') === 'seller' ? 'seller' : (qs.get('type') === 'buyer' ? 'buyer' : '');
   var state = { type: '', photos: [] };
 
   var TYPES = ['Car', 'SUV / Jeep', 'Van', 'Cab / Pickup', 'Motorcycle', 'Three Wheeler', 'Lorry', 'Bus'];
@@ -106,6 +114,7 @@
       lead: 'Give us a few details — one of our agents will call you. Free for buyers.',
       buy: 'I want to buy a vehicle', buyS: 'We will find the vehicle you are looking for',
       sell: 'I want to sell my vehicle', sellS: 'We will find a buyer for your vehicle',
+      aboutV: 'Enquiry about vehicle', aboutB: 'Your offer for the wanted request', showroom: 'Browse vehicles for sale',
       back: 'Back', buyTitle: 'The vehicle you want', sellTitle: 'Your vehicle',
       vtype: 'Vehicle type', any: 'Any', select: '— Select —', make: 'Make', model: 'Model',
       makePh: 'e.g. Toyota', modelPh: 'e.g. Aqua', notSure: 'leave blank if not sure',
@@ -159,7 +168,7 @@
       '<div class="choice">' +
       '<button type="button" class="buy" id="c_buy"><span class="badge-ic">' + ic('search') + '</span><span>' + t('buy') + '<small>' + t('buyS') + '</small></span></button>' +
       '<button type="button" class="sell" id="c_sell"><span class="badge-ic">' + ic('car') + '</span><span>' + t('sell') + '<small>' + t('sellS') + '</small></span></button>' +
-      '</div></div>';
+      '</div><a class="btn" href="vehicles.html" style="width:100%;margin-top:12px">' + ic('car') + ' ' + t('showroom') + '</a></div>';
     $('c_buy').onclick = function () { state.type = 'buyer'; renderForm(); window.scrollTo(0, 0); };
     $('c_sell').onclick = function () { state.type = 'seller'; renderForm(); window.scrollTo(0, 0); };
   }
@@ -179,6 +188,8 @@
     var lk = 'type="number" inputmode="decimal" step="0.1" min="0"';
     var h = '<div class="card"><button type="button" class="back" id="f_back">' + ic('left') + ' ' + t('back') + '</button>' +
       '<h1><span class="h-ic ' + (buyer ? 'buy' : 'sell') + '">' + ic(buyer ? 'search' : 'car') + '</span>' + (buyer ? t('buy') : t('sell')) + '</h1>' +
+      (ABOUT ? '<div class="about">' + ic(buyer ? 'car' : 'search') + '<span>' + (buyer ? t('aboutV') : t('aboutB')) + ' <b>' + esc(ABOUT) + '</b>' +
+        (PRE.make ? ' — ' + esc([PRE.make, PRE.model, qs.get('year') || ''].filter(Boolean).join(' ')) : '') + '</span></div>' : '') +
       '<form id="f" novalidate>' +
       '<div class="sec">' + (buyer ? t('buyTitle') : t('sellTitle')) + '</div>' +
       '<label class="f"><span>' + t('vtype') + (buyer ? '' : ' <em>*</em>') + '</span><select id="q_vehicle_type">' + typeOptions(buyer ? t('any') : t('select')) + '</select></label>' +
@@ -330,7 +341,7 @@
     if (!o.consent) return fail(t('e_consent'), 'q_consent');
     if (!API || API.indexOf('PASTE_') === 0) return fail(t('e_cfg'));
 
-    var payload = Object.assign({}, o, { type: state.type, phone: normPhone(o.phone), ref: REF, source: SRC, lang: lang,
+    var payload = Object.assign({}, o, { about: ABOUT, type: state.type, phone: normPhone(o.phone), ref: REF, source: SRC, lang: lang,
       website: ($('q_website') || {}).value || '', photos: buyer ? [] : state.photos });
     var btn = $('f_send'); btn.disabled = true; btn.innerHTML = '<span class="spin"></span> ' + t('sending');
     try {
@@ -365,6 +376,13 @@
 
   $('foot').textContent = t('foot');
   renderStart();
+  if (START_TYPE) {
+    state.type = START_TYPE; renderForm();
+    var pre = {}; Object.keys(PRE).forEach(function (k) { if (PRE[k]) pre[k] = PRE[k]; });
+    if (START_TYPE === 'seller') { delete pre.max_budget; delete pre.year_from; delete pre.year_to; }
+    else { delete pre.year; }
+    fillForm(pre);
+  }
 })();
 </script>
 </body>

@@ -845,7 +845,7 @@ async function boot() {
   applyInit(r);
 }
 
-const APP_VERSION = '3.4';   // must match APP.VERSION in Code.gs
+const APP_VERSION = '3.5';   // must match APP.VERSION in Code.gs
 
 function applyInit(r) {
   S.user = r.user; S.lists = r.lists; S.master = r.master; S.formUrl = r.formUrl || '';
@@ -1130,6 +1130,8 @@ function viewBuyerForm() {
         ${fld('b', 'max_budget', 'Maximum (Lakhs)', b.max_budget, 'type="number" step="0.1" min="0" placeholder="65" required', 'req')}
         ${id ? sel('b', 'status', 'Status', S.lists.BUYER_STATUS, b.status) : ''}
 
+        <label class="check full"><input type="checkbox" id="b_show_wanted" ${b.show_wanted === 'No' ? '' : 'checked'}>
+          Show this requirement on the public <b>Wanted</b> page <span class="muted">(no name or phone number is shown)</span></label>
         <div class="full row"><button class="btn green big" id="b_save">${ic('save')} Save & view matches</button></div>
         ${id && S.user.role === 'admin' ? `<div class="full row"><button type="button" class="btn red" onclick="deleteRecord('buyer','${esc(id)}')">${ic('trash')} Delete this buyer</button></div>` : ''}
       </form>
@@ -1147,6 +1149,7 @@ async function saveBuyer(e) {
   // district / fuel / transmission stay blank (= any), so no hidden filter limits matching.
   const old = d.buyer_id ? (S.rec[d.buyer_id] || {}) : (S.params.prefill || {});
   d.lead_id = d.buyer_id ? '' : (S.params.lead || '');
+  d.show_wanted = $('b_show_wanted') && !$('b_show_wanted').checked ? 'No' : 'Yes';
   d.phone2 = old.phone2 || '';
   d.notes = old.notes || '';
   const btn = $('b_save'); btn.disabled = true;
@@ -1175,6 +1178,7 @@ async function deleteRecord(kind, id) {
 /* ============================================================
  *  CUSTOMER REQUESTS (LEADS) — from the public request form
  * ============================================================ */
+function showroomUrl() { return (S.formUrl || '').replace('request.html', 'vehicles.html'); }
 function myFormLink() { return (S.formUrl || '') + '?ref=' + encodeURIComponent(S.user.username); }
 function waShareLink() {
   const t = 'ඔබට වාහනයක් ගන්න හෝ විකුණන්න අවශ්‍යද? මෙතනින් විස්තර එවන්න — අපි ඔබව අමතන්නම්. / Want to buy or sell a vehicle? Send your details here: ' + myFormLink();
@@ -1318,6 +1322,8 @@ function viewVehicleForm() {
                 ? `<label class="f"><span>Status</span><div>${statusBadge(v.status, [])} <span class="muted">${v.status === 'Rejected' ? 'Saving again sends it back for approval' : 'Waiting for admin approval'}</span></div></label>`
                 : sel('v', 'status', 'Status', (S.lists.VEHICLE_STATUS || []).filter(x => x !== 'Pending' && x !== 'Rejected'), v.status)))}
 
+        <label class="check full"><input type="checkbox" id="v_show_public" ${v.show_public === 'Yes' || (!id && v.show_public !== 'No') ? 'checked' : ''}>
+          Show on the public <b>website showroom</b> — the seller agrees <span class="muted">(price and photos are shown; no name or phone number)</span></label>
         <div class="sec">${ic('camera')} Photos</div>
         <div class="full photo-pick">
           <div id="v_photo_link">${photoLink(v) || '<span class="muted">No photos yet</span>'}</div>
@@ -1341,6 +1347,7 @@ async function saveVehicle(e) {
   // (notes also hold the admin's rejection reason).
   const old = d.vehicle_id ? (S.rec[d.vehicle_id] || {}) : (S.params.prefill || {});
   d.lead_id = d.vehicle_id ? '' : (S.params.lead || '');
+  d.show_public = $('v_show_public') && $('v_show_public').checked ? 'Yes' : 'No';
   ['phone2', 'district', 'mileage', 'fuel', 'transmission', 'notes'].forEach(f => { d[f] = old[f] == null ? '' : String(old[f]); });
   const btn = $('v_save'); btn.disabled = true;
   const r = await call('saveVehicle', d);
@@ -1491,7 +1498,7 @@ function vehicleCard(v) {
   }
   return `<div class="card rec seller">
     <div class="vrow">${thumbHtml(v)}<div>
-    <div class="top"><div><div class="title">${esc(carName(v))} — ${esc(lk(v.price))}</div><div class="muted">${esc(v.vehicle_id)} · ${esc(v.vehicle_type)}</div></div>
+    <div class="top"><div><div class="title">${esc(carName(v))} — ${esc(lk(v.price))}</div><div class="muted">${esc(v.vehicle_id)} · ${esc(v.vehicle_type)}${v.show_public === 'Yes' ? ` · <span class="badge">${ic('globe')} On website</span>` : ''}</div></div>
       ${statusBadge(v.status, ['Available'])}</div>
     <div class="sub">${[v.mileage ? v.mileage + ' km' : '', v.fuel, v.transmission, v.condition, v.color, v.district].filter(Boolean).map(esc).join(' · ')}</div>
     <div class="sub">${ic('user')} ${esc(v.owner_name)}</div>
@@ -1746,6 +1753,8 @@ function viewSettings() {
         <div class="row"><input id="my_link" readonly value="${esc(myFormLink())}" style="flex:1 1 260px">
           <button type="button" class="btn" onclick="copyMyLink()">${ic('check')} Copy</button>
           <a class="btn green" target="_blank" rel="noopener" href="${esc(waShareLink())}">${ic('message')} Share on WhatsApp</a></div>
+        <p class="muted" style="margin-top:12px">Public showroom: <a target="_blank" rel="noopener" href="${esc(showroomUrl())}">${esc(showroomUrl())}</a>
+          · Wanted page: <a target="_blank" rel="noopener" href="${esc(showroomUrl() + '#wanted')}">#wanted</a></p>
       </div>
       <div class="card" style="margin-top:14px">
         <h2 style="margin-top:0">${ic('key', 'h')} Change password</h2>
