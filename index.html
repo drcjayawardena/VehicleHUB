@@ -836,8 +836,35 @@ function statusBadge(s, okList) {
 /* ============================================================
  *  BOOT / AUTH
  * ============================================================ */
+/* ---------- One login with MasterCAL ----------
+ * Officers use their MasterCAL username + password here too. MasterCAL keeps
+ * its session in localStorage "mastercal_token" (same origin), and the
+ * server's mcLogin() checks it with MasterCAL and opens a VehicleHub session. */
+const MC_API_URL = 'https://script.google.com/macros/s/AKfycbx8m_v6iMUy8tTSGzxSfxi79ZyTfJgpy89WjVkqRMO3dvnm734znkdTvjpW92DhO-xN/exec';
+function mcToken() { try { return localStorage.getItem('mastercal_token') || ''; } catch (e) { return ''; } }
+/** MasterCAL token -> { token } (VehicleHub session) or { error }. */
+function mcSession(tok) {
+  return new Promise(resolve => {
+    google.script.run.withSuccessHandler(r => resolve(r && r.token ? { token: r.token } : { error: 'Login failed' }))
+      .withFailureHandler(err => resolve({ error: String((err && err.message) || err).replace(/^Error:\s*/, '') })).mcLogin(tok);
+  });
+}
+async function mcPasswordLogin(user, pass) {
+  const res = await fetch(MC_API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ action: 'login', args: [user, pass] }) });
+  const j = await res.json();
+  if (!j || !j.ok) throw new Error((j && j.error) || 'Login failed');
+  if (!j.data.token) throw new Error('MasterCAL account is waiting for admin approval.');
+  try { localStorage.setItem('mastercal_token', j.data.token); } catch (e) {}
+  return j.data.token;
+}
+
 async function boot() {
   S.token = stored('vm_token');
+  if (!S.token && mcToken()) {
+    S.token = (await mcSession(mcToken())).token || null;
+    if (S.token) store('vm_token', S.token);
+  }
   if (!S.token) return renderLogin();
   if (!document.querySelector('#app .splash')) $('app').innerHTML = '<div class="loading">Loading…</div>';
   const r = await call('init');
@@ -930,9 +957,22 @@ function doRegister(e) {
     .register({ full_name: $('rg_n').value, phone: $('rg_p').value, email: $('rg_e').value, username: $('rg_u').value, password: $('rg_pw').value });
 }
 
-function doLogin(e) {
+async function doLogin(e) {
   e.preventDefault();
   const btn = $('lg_btn'); btn.disabled = true; $('lg_err').textContent = ''; netStart();
+  /* MasterCAL username + password first; VehicleHub's own login is the fallback */
+  let mcTok = null;
+  try { mcTok = await mcPasswordLogin($('lg_u').value, $('lg_p').value); }
+  catch (ex) { /* not a MasterCAL login: try VehicleHub's own below */ }
+  if (mcTok) {
+    const r = await mcSession(mcTok);
+    netEnd();
+    if (!r.token) { $('lg_err').textContent = r.error; btn.disabled = false; return; }
+    S.token = r.token; store('vm_token', r.token);
+    const init = await call('init');
+    if (init) applyInit(init); else btn.disabled = false;
+    return;
+  }
   google.script.run
     .withSuccessHandler(async r => {
       netEnd();
@@ -951,6 +991,7 @@ function doLogin(e) {
 function logout(silent) {
   if (!silent && S.token) google.script.run.api(S.token, 'logout', {});
   S.token = null; store('vm_token', null);
+  if (!silent) { try { localStorage.removeItem('mastercal_token'); } catch (e) {} }   // log out of MasterCAL too
   renderLogin();
 }
 
