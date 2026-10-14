@@ -1410,6 +1410,25 @@ async function saveVehicle(e) {
   }
 }
 
+/** WhatsApp text for the officers' group: vehicle details + officer contact only (no customer name / phone). */
+function groupShareLink(rec, isBuyer) {
+  const join = a => a.filter(x => x !== '' && x != null && String(x).trim()).join(' ');
+  const car = join([rec.make, rec.model]) || rec.vehicle_type || '';
+  const lines = isBuyer ? [
+    '🔎 *ගැනුම්කරුවෙක් ඉන්නවා (Buyer wanted)*',
+    'Vehicle: ' + (join([car, rec.year_from || rec.year_to ? '(' + (rec.year_from || '…') + '–' + (rec.year_to || '…') + ')' : '']) || '-'),
+    'Budget: ' + (rec.min_budget ? 'Rs. ' + rec.min_budget + '–' + rec.max_budget + ' Lakhs' : lk(rec.max_budget))
+  ] : [
+    '🚗 *විකිණීමට වාහනයක් (Vehicle for sale)*',
+    'Vehicle: ' + (join([car, rec.year]) || '-'),
+    'Price: ' + lk(rec.price)
+  ];
+  if (!isBuyer && rec.condition) lines.push('Condition: ' + rec.condition);
+  if (rec.district) lines.push('District: ' + rec.district);
+  lines.push('', 'Officer: ' + join([S.user.full_name, S.user.phone]), 'VehicleHub');
+  return 'https:/' + '/wa.me/?text=' + encodeURIComponent(lines.join('\n'));
+}
+
 /* ============================================================
  *  RESULTS AFTER SAVING A CALL — only the matches are shown
  * ============================================================ */
@@ -1431,6 +1450,7 @@ function renderResults() {
       <div class="row">
         <button class="btn" onclick="go('${isBuyer ? 'buyerForm' : 'vehicleForm'}',{id:'${esc(p.id)}'})">${ic('edit')} Edit details</button>
         ${!isBuyer && photoLink(rec) ? photoLink(rec) : ''}
+        ${p.pending ? '' : `<a class="btn wa" target="_blank" rel="noopener" href="${groupShareLink(rec, isBuyer)}">${ic('message')} 📢 Group එකට යවන්න</a>`}
         <button class="btn primary" onclick="go('newcall')">${ic('phone')} Add new call</button>
       </div>
     </div>
