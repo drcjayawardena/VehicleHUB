@@ -460,15 +460,23 @@ function skeleton(n) {
     '<div class="skel"><i class="sq"></i><div class="lines"><i class="ln" style="width:70%"></i><i class="ln" style="width:45%"></i><i class="ln" style="width:85%"></i></div></div>').join('');
 }
 
-function call(action, payload) {
+function call(action, payload, retried) {
   netStart();
   return new Promise(resolve => {
     google.script.run
       .withSuccessHandler(r => { netEnd(); resolve(r); })
-      .withFailureHandler(err => {
+      .withFailureHandler(async err => {
         netEnd();
         const msg = String((err && err.message) || err);
-        if (msg.indexOf('SESSION_EXPIRED') > -1) { toast('Session expired — please log in again', true); logout(true); }
+        if (msg.indexOf('SESSION_EXPIRED') > -1) {
+          // VehicleHub sessions last 6 hours, the MasterCAL login 30 days:
+          // renew from the MasterCAL login and try once more before asking to log in.
+          if (!retried && mcToken()) {
+            const fresh = await mcSession(mcToken());
+            if (fresh.token) { S.token = fresh.token; store('vm_token', fresh.token); return resolve(await call(action, payload, true)); }
+          }
+          toast('Session expired — please log in again', true); logout(true);
+        }
         else {
           const clean = msg.replace(/^Error:\s*/, '').replace(/^Exception:\s*/, '');
           toast(clean, true);
