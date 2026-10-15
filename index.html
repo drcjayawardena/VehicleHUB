@@ -884,6 +884,7 @@ const APP_VERSION = '3.6';   // must match APP.VERSION in Code.gs
 
 function applyInit(r) {
   S.user = r.user; S.lists = r.lists; S.master = r.master; S.formUrl = r.formUrl || '';
+  try { localStorage.setItem('vehiclehub_username', S.user.username || ''); } catch (e) {}   // MasterCAL quotations link customers to this officer
   renderShell();
   checkVersions(r.versions);
   go('dashboard');

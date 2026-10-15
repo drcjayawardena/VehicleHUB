@@ -51,6 +51,9 @@
   .btn.pri { background: var(--p); color: #fff; width: 100%; font-size: 17px; }
   .btn.wa { background: #1faa53; color: #fff; width: 100%; font-size: 17px; }
   .btn:disabled { opacity: .6; cursor: wait; }
+  .top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .top .back { margin-bottom: 0; }
+  .lang { background: #eef3ff; color: var(--p); border: 0; border-radius: 8px; padding: 5px 12px; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
   .back { display: inline-flex; align-items: center; gap: 6px; background: none; border: 0; color: var(--p); font: inherit; font-weight: 600; cursor: pointer; padding: 0; margin-bottom: 8px; }
   .back .ic { width: 18px; height: 18px; }
   .err { color: var(--bad); font-size: 14px; min-height: 20px; margin: 4px 0 8px; }
@@ -92,8 +95,11 @@
   var API = window.VM_API_URL || '';
   var qs = new URLSearchParams(location.search);
   var REF = (qs.get('ref') || '').trim().toLowerCase();
-  var SRC = (qs.get('src') || qs.get('utm_source') || '').trim();
-  var lang = 'en';
+  var SRC = (qs.get('src') || qs.get('utm_source') || (qs.get('q') === '1' ? 'mastercal' : '')).trim();
+  // From a MasterCAL quotation: ?q=1&ref=<officer>&v=car|tw|bike&p=<customer phone>
+  //   short, Sinhala-first buyer form, already filled in as far as we know.
+  var QUICK = qs.get('q') === '1';
+  var lang = qs.get('lang') === 'en' ? 'en' : (qs.get('lang') === 'si' || QUICK ? 'si' : 'en');
   var MAX_PHOTOS = 5;
   // Coming from the showroom: ?type=buyer&about=V0001&make=..&model=..&vtype=..&year=..&price=..
   //                  or Wanted: ?type=seller&about=B0003&make=..&model=..&vtype=..
@@ -101,7 +107,11 @@
   var PRE = { make: qs.get('make') || '', model: qs.get('model') || '', vehicle_type: qs.get('vtype') || '',
               year: qs.get('year') || '', year_from: qs.get('year') || '', year_to: qs.get('year') || '',
               max_budget: qs.get('price') || '' };
-  var START_TYPE = qs.get('type') === 'seller' ? 'seller' : (qs.get('type') === 'buyer' ? 'buyer' : '');
+  var START_TYPE = qs.get('type') === 'seller' ? 'seller' : (qs.get('type') === 'buyer' || QUICK ? 'buyer' : '');
+  var QV = { car: 'Car', tw: 'Three Wheeler', bike: 'Motorcycle' }[qs.get('v') || ''] || '';
+  if (QV && !PRE.vehicle_type) PRE.vehicle_type = QV;
+  if (QUICK && qs.get('p')) PRE.phone = qs.get('p');
+  if (QUICK) PRE.leasing = true;
   var state = { type: '', photos: [] };
 
   var TYPES = ['Car', 'SUV / Jeep', 'Van', 'Cab / Pickup', 'Motorcycle', 'Three Wheeler', 'Lorry', 'Bus'];
@@ -140,10 +150,42 @@
       pe_t: function (n, t) { return 'Photo ' + n + ' of ' + t + ' — draw a box over the number plate'; },
       pe_h: 'Drag with your finger. You can draw several boxes. The area is hidden permanently.',
       pe_undo: 'Undo', pe_skip: 'Remove this photo', pe_ok: 'Done',
-      foot: 'Your details are kept safe and used only to contact you.'
+      foot: 'Your details are kept safe and used only to contact you.',
+      quickT: 'We will find the right vehicle for you', quickL: 'Tell us what you want — your officer will call you with matching vehicles. Free.',
+      other: 'සිංහල'
+    },
+    si: {
+      title: 'වාහනයක් ගන්න හෝ විකුණන්න ඕනෑද?',
+      lead: 'විස්තර කිහිපයක් දෙන්න — අපේ නියෝජිතයෙක් ඔබට කතා කරයි. ගන්න අයට නොමිලේ.',
+      buy: 'මට වාහනයක් ගන්න ඕනෑ', buyS: 'ඔබ හොයන වාහනය අපි හොයලා දෙන්නම්',
+      sell: 'මගේ වාහනය විකුණන්න ඕනෑ', sellS: 'ඔබේ වාහනයට ගැනුම්කරුවෙක් හොයලා දෙන්නම්',
+      showroom: 'විකිණීමට ඇති වාහන බලන්න',
+      back: 'ආපසු', buyTitle: 'ඔබට ඕනෑ වාහනය', sellTitle: 'ඔබේ වාහනය',
+      vtype: 'වාහන වර්ගය', any: 'ඕනෑම එකක්', select: '— තෝරන්න —', make: 'Make (සමාගම)', model: 'Model',
+      makePh: 'උදා: Toyota', modelPh: 'උදා: Aqua', notSure: 'විශ්වාස නැත්නම් හිස්ව තියන්න',
+      yFrom: 'අවුරුද්ද (සිට)', yTo: 'අවුරුද්ද (දක්වා)', budMin: 'අවම මුදල (ලක්ෂ)', budMax: 'උපරිම මුදල (ලක්ෂ)',
+      lakhsHint: 'උදා: රු. 6,250,000 = 62.5',
+      leasing: 'මට leasing / finance ඕනෑ',
+      you: 'ඔබේ විස්තර', name: 'ඔබේ නම', phone: 'දුරකථන / WhatsApp අංකය', email: 'Email', optional: '(අනිවාර්ය නැත)',
+      notes: 'වෙනත් විස්තර', notesPh: 'උදා: පාට වැදගත් නැහැ, ඉක්මනට ඕනෑ',
+      consent: 'මාව සම්බන්ධ කරගන්න VehicleHub නියෝජිතයෙකුට මගේ විස්තර පාවිච්චි කරන්න මම එකඟයි. මගේ අංකය වෙන කිසිවෙකුට දෙන්නේ නැහැ.',
+      send: 'Request එක යවන්න', sending: 'යවමින්…',
+      e_name: 'කරුණාකර ඔබේ නම දාන්න.', e_phone: 'හරි mobile අංකයක් දාන්න (07XXXXXXXX).',
+      e_email: 'Email ලිපිනය හරි නැහැ.', e_consent: 'කරුණාකර එකඟතා box එක tick කරන්න.',
+      e_budget: 'කරුණාකර ඔබේ උපරිම මුදල (ලක්ෂ) දාන්න.',
+      e_net: 'යවන්න බැරි වුණා. Internet එක බලලා ආයෙ උත්සාහ කරන්න.',
+      thanks: 'ස්තූතියි! ඔබේ request එක ලැබුණා.', refL: 'යොමු අංකය',
+      agent: function (n) { return 'අපේ නියෝජිත ' + n + ' ඉක්මනින් ඔබට කතා කරයි.'; },
+      agentAny: 'අපේ නියෝජිතයෙක් ඉක්මනින් ඔබට කතා කරයි.',
+      waBtn: 'WhatsApp එකෙන් තහවුරු කරන්න', waHint: 'Button එක ඔබලා message එක යවන්න.',
+      waMsg: function (ref, name) { return 'ආයුබෝවන්, මම ' + name + '. මම VehicleHub එකට request එකක් යැව්වා. යොමු අංකය: ' + ref; },
+      again: 'තවත් request එකක් යවන්න',
+      foot: 'ඔබේ විස්තර ආරක්ෂිතයි. ඔබව සම්බන්ධ කරගන්න විතරයි පාවිච්චි කරන්නේ.',
+      quickT: 'ඔබට ගැලපෙන වාහනය අපි හොයලා දෙන්නම්', quickL: 'ඔබට ඕනෑ දේ කියන්න — ගැලපෙන වාහන එක්ක ඔබේ නිලධාරියා ඔබට කතා කරයි. නොමිලේ.',
+      other: 'English'
     }
   };
-  function t(k) { return T[lang][k]; }
+  function t(k) { var v = T[lang][k]; return v === undefined ? T.en[k] : v; }
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   var $ = function (id) { return document.getElementById(id); };
   var ICONS = {
@@ -186,8 +228,11 @@
     var buyer = state.type === 'buyer', y = new Date().getFullYear();
     var yr = 'type="number" inputmode="numeric" min="1970" max="' + (y + 1) + '"';
     var lk = 'type="number" inputmode="decimal" step="0.1" min="0"';
-    var h = '<div class="card"><button type="button" class="back" id="f_back">' + ic('left') + ' ' + t('back') + '</button>' +
-      '<h1><span class="h-ic ' + (buyer ? 'buy' : 'sell') + '">' + ic(buyer ? 'search' : 'car') + '</span>' + (buyer ? t('buy') : t('sell')) + '</h1>' +
+    var quick = QUICK && buyer;
+    var h = '<div class="card"><div class="top">' + (quick ? '<span></span>' : '<button type="button" class="back" id="f_back">' + ic('left') + ' ' + t('back') + '</button>') +
+      '<button type="button" class="lang" id="f_lang">' + t('other') + '</button></div>' +
+      '<h1><span class="h-ic ' + (buyer ? 'buy' : 'sell') + '">' + ic(buyer ? 'search' : 'car') + '</span>' + (quick ? t('quickT') : buyer ? t('buy') : t('sell')) + '</h1>' +
+      (quick ? '<p class="lead">' + t('quickL') + '</p>' : '') +
       (ABOUT ? '<div class="about">' + ic(buyer ? 'car' : 'search') + '<span>' + (buyer ? t('aboutV') : t('aboutB')) + ' <b>' + esc(ABOUT) + '</b>' +
         (PRE.make ? ' — ' + esc([PRE.make, PRE.model, qs.get('year') || ''].filter(Boolean).join(' ')) : '') + '</span></div>' : '') +
       '<form id="f" novalidate>' +
@@ -199,8 +244,11 @@
       '</div>' + (buyer ? '<div class="muted" style="margin:-6px 0 10px">' + t('notSure') + '</div>' : '') +
       '<datalist id="mk">' + MAKES.map(function (m) { return '<option value="' + m + '">'; }).join('') + '</datalist>';
     if (buyer) {
-      h += '<div class="two">' + fld('q_year_from', t('yFrom'), yr + ' placeholder="2012"') + fld('q_year_to', t('yTo'), yr + ' placeholder="' + y + '"') + '</div>' +
-        '<div class="two">' + fld('q_min_budget', t('budMin'), lk + ' placeholder="40"') + fld('q_max_budget', t('budMax'), lk + ' placeholder="60"', '', true) + '</div>' +
+      h += quick
+        ? '<div class="two">' + fld('q_max_budget', t('budMax'), lk + ' placeholder="60"', '', true) + fld('q_year_from', t('yFrom'), yr + ' placeholder="2012"') + '</div>'
+        : '<div class="two">' + fld('q_year_from', t('yFrom'), yr + ' placeholder="2012"') + fld('q_year_to', t('yTo'), yr + ' placeholder="' + y + '"') + '</div>' +
+          '<div class="two">' + fld('q_min_budget', t('budMin'), lk + ' placeholder="40"') + fld('q_max_budget', t('budMax'), lk + ' placeholder="60"', '', true) + '</div>';
+      h +=
         '<div class="muted" style="margin:-6px 0 10px">' + t('lakhsHint') + '</div>' +
         '<label class="check"><input type="checkbox" id="q_leasing"><span>' + t('leasing') + '</span></label>';
     } else {
@@ -215,7 +263,7 @@
     h += '<div class="sec">' + t('you') + '</div>' +
       fld('q_name', t('name'), 'autocomplete="name" maxlength="80"', '', true) +
       fld('q_phone', t('phone'), 'type="tel" inputmode="tel" autocomplete="tel" placeholder="07XXXXXXXX"', '', true) +
-      fld('q_email', t('email'), 'type="email" inputmode="email" autocomplete="email" placeholder="name@gmail.com"', t('optional')) +
+      (quick ? '' : fld('q_email', t('email'), 'type="email" inputmode="email" autocomplete="email" placeholder="name@gmail.com"', t('optional'))) +
       '<label class="f"><span>' + t('notes') + ' <i>' + t('optional') + '</i></span><textarea id="q_notes" maxlength="500" placeholder="' + t('notesPh') + '"></textarea></label>' +
       '<div class="hp" aria-hidden="true"><label>Website <input id="q_website" tabindex="-1" autocomplete="off"></label></div>' +
       '<label class="check"><input type="checkbox" id="q_consent"><span>' + t('consent') + '</span></label>' +
@@ -223,7 +271,8 @@
       '<button class="btn pri" id="f_send" type="submit">' + ic('send') + ' ' + t('send') + '</button>' +
       '</form></div>';
     $('app').innerHTML = h;
-    $('f_back').onclick = function () { state.photos = []; renderStart(); };
+    if ($('f_back')) $('f_back').onclick = function () { state.photos = []; renderStart(); };
+    $('f_lang').onclick = function () { var keep = readForm(); lang = lang === 'si' ? 'en' : 'si'; $('foot').textContent = t('foot'); renderForm(); fillForm(keep); };
     $('f').onsubmit = submit;
     if (!buyer) {
       $('ph_add').onclick = function () { $('q_files').click(); };
@@ -235,13 +284,13 @@
   var FIELDS = ['vehicle_type', 'make', 'model', 'year_from', 'year_to', 'year', 'min_budget', 'max_budget', 'price', 'name', 'phone', 'email', 'notes'];
   function readForm() {
     var o = {};
-    FIELDS.forEach(function (k) { var el = $('q_' + k); if (el) o[k] = el.value.trim(); });
+    FIELDS.forEach(function (k) { var el = $('q_' + k); o[k] = el ? el.value.trim() : ''; });
     ['leasing', 'consent'].forEach(function (k) { var el = $('q_' + k); if (el) o[k] = el.checked; });
     return o;
   }
   function fillForm(o) {
     FIELDS.forEach(function (k) { var el = $('q_' + k); if (el && o[k] != null) el.value = o[k]; });
-    ['leasing', 'consent'].forEach(function (k) { var el = $('q_' + k); if (el) el.checked = !!o[k]; });
+    ['leasing', 'consent'].forEach(function (k) { var el = $('q_' + k); if (el && k in o) el.checked = !!o[k]; });
   }
 
   // ---------- photos: resize + number-plate blur, all in the browser ----------
@@ -381,6 +430,7 @@
     var pre = {}; Object.keys(PRE).forEach(function (k) { if (PRE[k]) pre[k] = PRE[k]; });
     if (START_TYPE === 'seller') { delete pre.max_budget; delete pre.year_from; delete pre.year_to; }
     else { delete pre.year; }
+    if (pre.phone) pre.phone = normPhone(pre.phone);
     fillForm(pre);
   }
 })();
