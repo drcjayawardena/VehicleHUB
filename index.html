@@ -232,6 +232,7 @@
     .uwrap { overflow-x: auto; }
     .photo-pick { display: flex; flex-direction: column; gap: 6px; }
     /* ---------- Photo blur editor ---------- */
+    .pe-auto { background: #e7f6ec; color: #14532d; border-radius: 8px; padding: 8px 10px; margin: 6px 0; font-size: 14px; }
     .pe-back { position: fixed; inset: 0; background: rgba(10,16,24,.82); z-index: 100; display: flex;
       align-items: center; justify-content: center; padding: 12px; }
     .pe { background: var(--card); border-radius: 12px; padding: 14px; width: min(960px, 100%); max-height: 100%;
@@ -298,6 +299,7 @@
   </script>
 
   <script src="config.js"></script>
+  <script src="plate.js"></script>
   <script>
     /* ============================================================
      *  WEBSITE MODE (GitHub Pages)
@@ -761,6 +763,7 @@ function blurEditor(dataUrl, n, total) {
       back.className = 'pe-back';
       back.innerHTML = `<div class="pe">
         <h3>${ic('camera')} Photo ${n} of ${total} — drag a box over the number plate to blur it</h3>
+        <div class="pe-auto" id="pe_auto"></div>
         <div class="muted">You can draw several boxes (plate, faces, documents). Nothing is uploaded until you press Upload.</div>
         <canvas id="pe_c"></canvas>
         <div class="row">
@@ -772,7 +775,10 @@ function blurEditor(dataUrl, n, total) {
 
       const c = back.querySelector('#pe_c'), ctx = c.getContext('2d');
       c.width = img.naturalWidth; c.height = img.naturalHeight;
-      const boxes = [];
+      const boxes = autoPlateBoxes(img, c);
+      back.querySelector('#pe_auto').innerHTML = boxes.length
+        ? '✅ Number plate එක ඉබේම blur කළා. හරිද බලන්න — වැරදි නම් <b>Undo</b> ඔබලා plate එක උඩින් box එකක් අඳින්න.'
+        : 'Number plate එක හොයාගන්න බැරි වුණා — plate එක උඩින් ඇඟිල්ලෙන් box එකක් අඳින්න.';
       let start = null, cur = null;
 
       const redraw = () => {
@@ -809,6 +815,14 @@ function blurEditor(dataUrl, n, total) {
     img.onerror = () => resolve(dataUrl);
     img.src = dataUrl;
   });
+}
+
+/** Number-plate guess (plate.js) for a photo, as blur boxes; [] when none is found. */
+function autoPlateBoxes(img, c) {
+  try {
+    c.getContext('2d').drawImage(img, 0, 0);
+    return window.findPlates ? window.findPlates(c) : [];
+  } catch (e) { return []; }
 }
 
 /** Strong mosaic over a box — irreversible once saved as JPEG. */

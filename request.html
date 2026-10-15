@@ -8,6 +8,7 @@
 <meta name="theme-color" content="#1d3f8f">
 <link rel="icon" href="icon-192.png">
 <script src="config.js"></script>
+<script src="plate.js"></script>
 <style>
   :root { --p:#1d3f8f; --p2:#2d5bd0; --ink:#172033; --mut:#5f6b7d; --bg:#f3f5f9; --line:#dde3ee; --ok:#1b7a3d; --bad:#c0392b; --or:#b86200; }
   * { box-sizing: border-box; }
@@ -54,6 +55,7 @@
   .top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
   .top .back { margin-bottom: 0; }
   .lang { background: #eef3ff; color: var(--p); border: 0; border-radius: 8px; padding: 5px 12px; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
+  .pe-auto { background: #e7f6ec; color: #14532d; border-radius: 10px; padding: 8px 10px; margin: 6px 0; font-size: 14px; }
   .back { display: inline-flex; align-items: center; gap: 6px; background: none; border: 0; color: var(--p); font: inherit; font-weight: 600; cursor: pointer; padding: 0; margin-bottom: 8px; }
   .back .ic { width: 18px; height: 18px; }
   .err { color: var(--bad); font-size: 14px; min-height: 20px; margin: 4px 0 8px; }
@@ -131,7 +133,7 @@
       yFrom: 'Year (from)', yTo: 'Year (to)', year: 'Year of manufacture', budMin: 'Minimum budget (Lakhs)', budMax: 'Maximum budget (Lakhs)',
       price: 'Expected price (Lakhs)', lakhsHint: 'e.g. Rs. 6,250,000 = 62.5',
       leasing: 'I need leasing / finance',
-      photos: 'Photos', photosHint: 'Up to 5. After choosing, draw a box over the number plate on each photo to hide it.',
+      photos: 'Photos', photosHint: 'Up to 5. The number plate is blurred automatically — you can check and fix it on each photo.',
       addPhotos: 'Add photos',
       you: 'Your details', name: 'Your name', phone: 'Phone / WhatsApp number', email: 'Email', optional: '(optional)',
       notes: 'Anything else', notesPh: 'e.g. colour does not matter, need it soon',
@@ -150,6 +152,8 @@
       pe_t: function (n, t) { return 'Photo ' + n + ' of ' + t + ' — draw a box over the number plate'; },
       pe_h: 'Drag with your finger. You can draw several boxes. The area is hidden permanently.',
       pe_undo: 'Undo', pe_skip: 'Remove this photo', pe_ok: 'Done',
+      pe_auto: 'The number plate was blurred automatically. Please check — if it is wrong, press Undo and draw a box over the plate.',
+      pe_none: 'Could not find the number plate — draw a box over it with your finger.',
       foot: 'Your details are kept safe and used only to contact you.',
       quickT: 'We will find the right vehicle for you', quickL: 'Tell us what you want — your officer will call you with matching vehicles. Free.',
       other: 'සිංහල'
@@ -340,13 +344,15 @@
       var img = new Image();
       img.onload = function () {
         var back = document.createElement('div'); back.className = 'pe-back';
-        back.innerHTML = '<div class="pe"><h3>' + esc(t('pe_t')(n, total)) + '</h3><div class="muted">' + t('pe_h') + '</div>' +
+        back.innerHTML = '<div class="pe"><h3>' + esc(t('pe_t')(n, total)) + '</h3><div class="pe-auto" id="pe_auto"></div><div class="muted">' + t('pe_h') + '</div>' +
           '<canvas id="pe_c"></canvas><div class="row"><button type="button" class="btn" id="pe_undo">' + ic('undo') + ' ' + t('pe_undo') + '</button>' +
           '<button type="button" class="btn" id="pe_skip">' + ic('x') + ' ' + t('pe_skip') + '</button><button type="button" class="btn ok" id="pe_ok">' + ic('check') + ' ' + t('pe_ok') + '</button></div></div>';
         document.body.appendChild(back);
         var c = back.querySelector('#pe_c'), ctx = c.getContext('2d');
         c.width = img.naturalWidth; c.height = img.naturalHeight;
         var boxes = [], start = null, cur = null;
+        try { ctx.drawImage(img, 0, 0); boxes = window.findPlates ? window.findPlates(c) : []; } catch (e) { boxes = []; }
+        back.querySelector('#pe_auto').textContent = boxes.length ? t('pe_auto') : t('pe_none');
         function redraw() {
           ctx.drawImage(img, 0, 0);
           boxes.forEach(function (b) { pixelate(ctx, b); });
