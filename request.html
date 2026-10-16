@@ -119,6 +119,65 @@
   var TYPES = ['Car', 'SUV / Jeep', 'Van', 'Cab / Pickup', 'Motorcycle', 'Three Wheeler', 'Lorry', 'Bus'];
   var MAKES = ['Toyota', 'Suzuki', 'Honda', 'Nissan', 'Mitsubishi', 'Mazda', 'Daihatsu', 'Hyundai', 'Kia', 'Micro', 'Perodua', 'Tata', 'Mahindra',
                'Bajaj', 'TVS', 'Hero', 'Yamaha', 'BMW', 'Mercedes-Benz', 'Audi', 'Isuzu', 'Ford', 'Subaru', 'Renault', 'MG', 'BYD', 'Tesla'];
+  // Make -> Model -> Year lists (same as MasterCAL Vehicle Checking). Makes without models here get a typed model.
+  var MODELS = {
+    "Toyota": ["Aqua", "Allion", "Axio", "Belta", "Camry", "C-HR", "Corolla", "Fortuner", "Hiace", "Hilux", "KDH",
+               "Land Cruiser", "Land Cruiser Prado", "Passo", "Premio", "Prius", "Raize", "Roomy", "Rush", "Vitz", "Yaris"],
+    "Suzuki": ["A-Star", "Alto", "Celerio", "Dzire", "Ertiga", "Every", "Estilo", "Hustler", "Jimny", "Spacia",
+               "Swift", "Vitara", "Wagon R", "Wagon R FX", "Wagon R Stingray"],
+    "Honda": ["Civic", "CR-V", "Fit", "Fit Shuttle", "Freed", "Grace", "Insight", "Vezel", "WR-V",
+              "CB Shine", "CD 125", "Dio", "Hornet", "X-Blade"],
+    "Nissan": ["Caravan", "Dayz", "Leaf", "March", "Navara", "Note", "Sunny", "Tiida", "X-Trail"],
+    "Mitsubishi": ["Lancer", "Montero", "Outlander", "Pajero", "L200", "Eclipse Cross", "Mirage", "eK Wagon"],
+    "Mazda": ["Axela", "BT-50", "CX-3", "CX-5", "Demio", "Familia"],
+    "Micro": ["Panda", "Trend", "MX7", "Actyon", "Kyron", "Rexton"],
+    "Hyundai": ["Accent", "Creta", "Elantra", "Grand i10", "i20", "Santa Fe", "Tucson", "Venue"],
+    "Kia": ["Picanto", "Rio", "Sorento", "Sportage", "Sonet", "Stonic"],
+    "Daihatsu": ["Boon", "Hijet", "Mira", "Move", "Rocky", "Tanto", "Terios"],
+    "Perodua": ["Axia", "Bezza", "Kelisa", "Myvi", "Viva"],
+    "Tata": ["Ace", "Indica", "Nano", "Super Ace", "Xenon"],
+    "Mahindra": ["Bolero", "KUV100", "Maxximo", "Scorpio", "XUV500"],
+    "Bajaj": ["RE Three Wheeler", "Discover", "Platina", "Pulsar", "CT 100"],
+    "TVS": ["King Three Wheeler", "Apache", "Metro", "Ntorq", "Scooty Pep"],
+    "Hero": ["Dash", "Destini", "Hunk", "Maestro", "Pleasure", "Splendor"],
+    "Yamaha": ["FZ", "Fascino", "Ray ZR", "R15"]
+  };
+  // Years each model was made: [first, last] (0 = still made); anything else shows every year from FIRST_YEAR.
+  var YEARS = {
+    "Toyota": { "Aqua": [2011, 0], "Allion": [2001, 2021], "Axio": [2006, 0], "Belta": [2005, 0], "Camry": [1990, 0],
+      "C-HR": [2016, 0], "Corolla": [1990, 0], "Fortuner": [2005, 0], "Hiace": [1990, 0], "Hilux": [1990, 0], "KDH": [2004, 0],
+      "Land Cruiser": [1990, 0], "Land Cruiser Prado": [1990, 0], "Passo": [2004, 0], "Premio": [2001, 2021], "Prius": [1997, 0],
+      "Raize": [2019, 0], "Roomy": [2016, 0], "Rush": [2006, 0], "Vitz": [1999, 2019], "Yaris": [2005, 0] },
+    "Suzuki": { "A-Star": [2008, 2015], "Alto": [1990, 0], "Celerio": [2008, 0], "Dzire": [2008, 0], "Ertiga": [2012, 0],
+      "Every": [1990, 0], "Estilo": [2006, 2014], "Hustler": [2014, 0], "Jimny": [1990, 0], "Spacia": [2013, 0],
+      "Swift": [2000, 0], "Vitara": [1990, 0], "Wagon R": [1993, 0], "Wagon R FX": [2003, 2017], "Wagon R Stingray": [2007, 0] },
+    "Honda": { "Civic": [1990, 0], "CR-V": [1995, 0], "Fit": [2001, 0], "Fit Shuttle": [2011, 2015], "Freed": [2008, 0],
+      "Grace": [2014, 2020], "Insight": [1999, 2022], "Vezel": [2013, 0], "WR-V": [2017, 0],
+      "CB Shine": [2006, 0], "CD 125": [1990, 0], "Dio": [1990, 0], "Hornet": [2015, 0], "X-Blade": [2018, 0] },
+    "Nissan": { "Caravan": [1990, 0], "Dayz": [2013, 0], "Leaf": [2010, 0], "March": [1990, 0], "Navara": [1997, 0],
+      "Note": [2004, 0], "Sunny": [1990, 0], "Tiida": [2004, 2016], "X-Trail": [2000, 0] },
+    "Mitsubishi": { "Lancer": [1990, 2017], "Montero": [1990, 2021], "Outlander": [2001, 0], "Pajero": [1990, 2021],
+      "L200": [1990, 0], "Eclipse Cross": [2017, 0], "Mirage": [1990, 0], "eK Wagon": [2001, 0] },
+    "Mazda": { "Axela": [2003, 2019], "BT-50": [2006, 0], "CX-3": [2015, 0], "CX-5": [2012, 0], "Demio": [1996, 2019],
+      "Familia": [1990, 2004] },
+    "Micro": { "Panda": [2008, 2014], "Trend": [2010, 2015], "MX7": [2011, 2015], "Actyon": [2006, 2015],
+      "Kyron": [2005, 2014], "Rexton": [2001, 2015] },
+    "Hyundai": { "Accent": [1994, 0], "Creta": [2014, 0], "Elantra": [1990, 0], "Grand i10": [2013, 0], "i20": [2008, 0],
+      "Santa Fe": [2000, 0], "Tucson": [2004, 0], "Venue": [2019, 0] },
+    "Kia": { "Picanto": [2004, 0], "Rio": [1999, 0], "Sorento": [2002, 0], "Sportage": [1993, 0], "Sonet": [2020, 0],
+      "Stonic": [2017, 0] },
+    "Daihatsu": { "Boon": [2004, 0], "Hijet": [1990, 0], "Mira": [1990, 0], "Move": [1995, 0], "Rocky": [2019, 0],
+      "Tanto": [2003, 0], "Terios": [1997, 0] },
+    "Perodua": { "Axia": [2014, 0], "Bezza": [2016, 0], "Kelisa": [2001, 2007], "Myvi": [2005, 0], "Viva": [2007, 2014] },
+    "Tata": { "Ace": [2005, 0], "Indica": [1998, 2018], "Nano": [2008, 2019], "Super Ace": [2008, 0], "Xenon": [2007, 0] },
+    "Mahindra": { "Bolero": [2000, 0], "KUV100": [2016, 0], "Maxximo": [2010, 0], "Scorpio": [2002, 0], "XUV500": [2011, 2021] },
+    "Bajaj": { "RE Three Wheeler": [1990, 0], "Discover": [2004, 0], "Platina": [2006, 0], "Pulsar": [2001, 0], "CT 100": [2004, 0] },
+    "TVS": { "King Three Wheeler": [2008, 0], "Apache": [2005, 0], "Metro": [2009, 0], "Ntorq": [2018, 0], "Scooty Pep": [2005, 0] },
+    "Hero": { "Dash": [2014, 0], "Destini": [2018, 0], "Hunk": [2007, 0], "Maestro": [2012, 0], "Pleasure": [2006, 0],
+      "Splendor": [1994, 0] },
+    "Yamaha": { "FZ": [2008, 0], "Fascino": [2015, 0], "Ray ZR": [2016, 0], "R15": [2008, 0] }
+  };
+  var FIRST_YEAR = 1990, OTHER = '__other';
 
   var T = {
     en: {
@@ -128,7 +187,7 @@
       sell: 'I want to sell my vehicle', sellS: 'We will find a buyer for your vehicle',
       aboutV: 'Enquiry about vehicle', aboutB: 'Your offer for the wanted request', showroom: 'Browse vehicles for sale',
       back: 'Back', buyTitle: 'The vehicle you want', sellTitle: 'Your vehicle',
-      vtype: 'Vehicle type', any: 'Any', select: '— Select —', make: 'Make', model: 'Model',
+      vtype: 'Vehicle type', any: 'Any', select: '— Select —', otherOpt: 'Other…', pickMake: 'Select a make first', make: 'Make', model: 'Model',
       makePh: 'e.g. Toyota', modelPh: 'e.g. Aqua', notSure: 'leave blank if not sure',
       yFrom: 'Year (from)', yTo: 'Year (to)', year: 'Year of manufacture', budMin: 'Minimum budget (Lakhs)', budMax: 'Maximum budget (Lakhs)',
       price: 'Expected price (Lakhs)', lakhsHint: 'e.g. Rs. 6,250,000 = 62.5',
@@ -166,14 +225,14 @@
       sell: 'මගේ වාහනය විකුණන්න ඕනෑ', sellS: 'ඔබේ වාහනයට ගැනුම්කරුවෙක් හොයලා දෙන්නම්',
       showroom: 'විකිණීමට ඇති වාහන බලන්න',
       back: 'ආපසු', buyTitle: 'ඔබට ඕනෑ වාහනය', sellTitle: 'ඔබේ වාහනය',
-      vtype: 'වාහන වර්ගය', any: 'ඕනෑම එකක්', select: '— තෝරන්න —', make: 'Make (සමාගම)', model: 'Model',
-      makePh: 'උදා: Toyota', modelPh: 'උදා: Aqua', notSure: 'විශ්වාස නැත්නම් හිස්ව තියන්න',
+      vtype: 'වාහන වර්‍ගය', any: 'ඕනෑම එකක්', select: '— තෝරන්න —', otherOpt: 'වෙනත්…', pickMake: 'මුලින් Make තෝරන්න', make: 'Make', model: 'Model',
+      makePh: 'උදා: Toyota', modelPh: 'උදා: Aqua', notSure: 'අවශ්‍ය නෑ',
       yFrom: 'අවුරුද්ද (සිට)', yTo: 'අවුරුද්ද (දක්වා)', budMin: 'අවම මුදල (ලක්ෂ)', budMax: 'උපරිම මුදල (ලක්ෂ)',
       lakhsHint: 'උදා: රු. 6,250,000 = 62.5',
       leasing: 'මට leasing / finance ඕනෑ',
-      you: 'ඔබේ විස්තර', name: 'ඔබේ නම', phone: 'දුරකථන / WhatsApp අංකය', email: 'Email', optional: '(අනිවාර්ය නැත)',
+      you: 'ඔබේ විස්තර', name: 'ඔබේ නම', phone: 'දුරකථන / WhatsApp අංකය', email: 'Email', optional: '(අනිවාර්‍ය නැත)',
       notes: 'වෙනත් විස්තර', notesPh: 'උදා: පාට වැදගත් නැහැ, ඉක්මනට ඕනෑ',
-      consent: 'මාව සම්බන්ධ කරගන්න VehicleHub නියෝජිතයෙකුට මගේ විස්තර පාවිච්චි කරන්න මම එකඟයි. මගේ අංකය වෙන කිසිවෙකුට දෙන්නේ නැහැ.',
+      consent: 'මාව සම්බන්ධ කරගන්න VehicleHub නියෝජිතයෙකුට මගේ විස්තර පාවිච්චි කරන්න මම එකඟයි. මගේ අංකය වෙන කිසිවෙකුට දෙන්න එපා.',
       send: 'Request එක යවන්න', sending: 'යවමින්…',
       e_name: 'කරුණාකර ඔබේ නම දාන්න.', e_phone: 'හරි mobile අංකයක් දාන්න (07XXXXXXXX).',
       e_email: 'Email ලිපිනය හරි නැහැ.', e_consent: 'කරුණාකර එකඟතා box එක tick කරන්න.',
@@ -192,7 +251,7 @@
       photos: 'Photos', photosHint: '5ක් දක්වා. Number plate එක ඉබේම blur වෙනවා — හැම photo එකකම බලලා හදන්න පුළුවන්.',
       addPhotos: 'Photos දාන්න', e_seller: 'කරුණාකර make, model සහ මිල දාන්න.',
       pe_t: function (n, t) { return 'Photo ' + n + ' / ' + t + ' — number plate එක බලන්න'; },
-      pe_h: 'ඇඟිල්ලෙන් ඇදලා box අඳින්න පුළුවන්. ඒ කොටස සම්පූර්ණයෙන්ම වැහෙනවා.',
+      pe_h: 'ඇඟිල්ලෙන් ඇදලා box අඳින්න පුළුවන්. ඒ කොටස සම්පූර්‍ණයෙන්ම වැහෙනවා.',
       pe_undo: 'Undo', pe_skip: 'මේ photo එක අයින් කරන්න', pe_ok: 'හරි',
       pe_auto: 'Number plate එක ඉබේම blur කළා. හරිද බලන්න — වැරදි නම් Undo ඔබලා plate එක උඩින් box එකක් අඳින්න.',
       pe_none: 'Number plate එක හොයාගන්න බැරි වුණා — plate එක උඩින් ඇඟිල්ලෙන් box එකක් අඳින්න.',
@@ -238,9 +297,77 @@
     return '<label class="f"><span>' + label + (req ? ' <em>*</em>' : '') + (hint ? ' <i>' + hint + '</i>' : '') + '</span><input id="' + id + '" ' + (attrs || '') + '></label>';
   }
 
+  // Make / Model: a dropdown; "Other…" shows a text box (q_make / q_model hold the value sent).
+  function dsel(k, label, ph, req) {
+    return '<label class="f"><span>' + label + (req ? ' <em>*</em>' : '') + '</span><select id="s_' + k + '"></select>' +
+      '<input id="q_' + k + '" autocomplete="off" placeholder="' + ph + '" style="margin-top:6px" hidden></label>';
+  }
+  function ysel(id, label) { return '<label class="f"><span>' + label + '</span><select id="' + id + '"></select></label>'; }
+  function opts(sel, items, first, other) {
+    sel.innerHTML = '<option value="">' + esc(first) + '</option>' + items.map(function (v) {
+      return '<option value="' + esc(v) + '">' + esc(v) + '</option>'; }).join('') +
+      (other ? '<option value="' + OTHER + '">' + esc(t('otherOpt')) + '</option>' : '');
+  }
+  function yearsFor(make, model) {
+    var now = new Date().getFullYear(), r = (YEARS[make] || {})[model] || [FIRST_YEAR, 0], out = [];
+    for (var y = r[1] || now; y >= Math.max(r[0], FIRST_YEAR); y--) out.push(String(y));
+    return out;
+  }
+  function findIn(list, v) {
+    v = String(v || '').trim().toLowerCase();
+    for (var i = 0; i < list.length; i++) if (list[i].toLowerCase() === v) return list[i];
+    return '';
+  }
+  // Fill Model and Year from the chosen Make / Model, keeping `model` if given.
+  function setMake(make, model) {
+    var buyer = state.type === 'buyer', first = buyer ? t('any') : t('select');
+    var sm = $('s_make'), im = $('q_make'), so = $('s_model'), io = $('q_model');
+    var known = findIn(MAKES, make);
+    sm.value = known || (make ? OTHER : '');
+    im.hidden = sm.value !== OTHER; im.value = known || make || '';
+    var list = known ? (MODELS[known] || []) : [];
+    if (!make) { opts(so, [], t('pickMake')); so.disabled = true; so.hidden = false; io.hidden = true; io.value = ''; }
+    else if (!list.length) { so.hidden = true; io.hidden = false; io.value = model || ''; }
+    else {
+      opts(so, list, first, true); so.disabled = false; so.hidden = false;
+      var km = findIn(list, model);
+      so.value = km || (model ? OTHER : '');
+      io.hidden = so.value !== OTHER; io.value = km || model || '';
+    }
+    setYears();
+  }
+  function setYears() {
+    var buyer = state.type === 'buyer', list = yearsFor(findIn(MAKES, $('q_make').value), $('q_model').value);
+    ['q_year_from', 'q_year_to', 'q_year'].forEach(function (id) {
+      var el = $(id); if (!el) return;
+      var keep = el.value, l = list.slice();
+      if (keep && l.indexOf(keep) < 0) l.unshift(keep);
+      opts(el, l, buyer ? t('any') : t('select'));
+      el.value = keep;
+    });
+  }
+  function clearYears() { ['q_year_from', 'q_year_to', 'q_year'].forEach(function (id) { if ($(id)) $(id).value = ''; }); }
+  function wireVehicle() {
+    MAKES.forEach(function (m) { if (!MODELS[m]) MODELS[m] = []; });
+    var buyer = state.type === 'buyer';
+    opts($('s_make'), MAKES, buyer ? t('any') : t('select'), true);
+    $('s_make').onchange = function () {
+      var v = this.value; clearYears(); setMake(v === OTHER ? '' : v, '');
+      if (v === OTHER) { this.value = OTHER; $('q_make').hidden = false; $('q_make').focus(); opts($('s_model'), [], t('pickMake')); $('s_model').hidden = true; $('q_model').hidden = false; }
+    };
+    $('q_make').oninput = setYears;
+    $('s_model').onchange = function () {
+      var v = this.value, io = $('q_model');
+      io.hidden = v !== OTHER; io.value = v === OTHER ? '' : v;
+      if (v === OTHER) io.focus();
+      clearYears(); setYears();
+    };
+    $('q_model').oninput = setYears;
+    setMake('', '');
+  }
+
   function renderForm() {
     var buyer = state.type === 'buyer', y = new Date().getFullYear();
-    var yr = 'type="number" inputmode="numeric" min="1970" max="' + (y + 1) + '"';
     var lk = 'type="number" inputmode="decimal" step="0.1" min="0"';
     var quick = QUICK;
     var h = '<div class="card"><div class="top">' + (quick ? '<span></span>' : '<button type="button" class="back" id="f_back">' + ic('left') + ' ' + t('back') + '</button>') +
@@ -253,20 +380,18 @@
       '<div class="sec">' + (buyer ? t('buyTitle') : t('sellTitle')) + '</div>' +
       '<label class="f"><span>' + t('vtype') + (buyer ? '' : ' <em>*</em>') + '</span><select id="q_vehicle_type">' + typeOptions(buyer ? t('any') : t('select')) + '</select></label>' +
       '<div class="two">' +
-        fld('q_make', t('make'), 'list="mk" autocomplete="off" placeholder="' + t('makePh') + '"', buyer ? '' : '', !buyer) +
-        fld('q_model', t('model'), 'autocomplete="off" placeholder="' + t('modelPh') + '"', '', !buyer) +
-      '</div>' + (buyer ? '<div class="muted" style="margin:-6px 0 10px">' + t('notSure') + '</div>' : '') +
-      '<datalist id="mk">' + MAKES.map(function (m) { return '<option value="' + m + '">'; }).join('') + '</datalist>';
+        dsel('make', t('make'), t('makePh'), !buyer) + dsel('model', t('model'), t('modelPh'), !buyer) +
+      '</div>' + (buyer ? '<div class="muted" style="margin:-6px 0 10px">' + t('notSure') + '</div>' : '');
     if (buyer) {
       h += quick
-        ? '<div class="two">' + fld('q_max_budget', t('budMax'), lk + ' placeholder="60"', '', true) + fld('q_year_from', t('yFrom'), yr + ' placeholder="2012"') + '</div>'
-        : '<div class="two">' + fld('q_year_from', t('yFrom'), yr + ' placeholder="2012"') + fld('q_year_to', t('yTo'), yr + ' placeholder="' + y + '"') + '</div>' +
+        ? '<div class="two">' + ysel('q_year_from', t('yFrom')) + fld('q_max_budget', t('budMax'), lk + ' placeholder="60"', '', true) + '</div>'
+        : '<div class="two">' + ysel('q_year_from', t('yFrom')) + ysel('q_year_to', t('yTo')) + '</div>' +
           '<div class="two">' + fld('q_min_budget', t('budMin'), lk + ' placeholder="40"') + fld('q_max_budget', t('budMax'), lk + ' placeholder="60"', '', true) + '</div>';
       h +=
         '<div class="muted" style="margin:-6px 0 10px">' + t('lakhsHint') + '</div>' +
         '<label class="check"><input type="checkbox" id="q_leasing"><span>' + t('leasing') + '</span></label>';
     } else {
-      h += '<div class="two">' + fld('q_year', t('year'), yr + ' placeholder="2016"') + fld('q_price', t('price'), lk + ' placeholder="62.5"', '', true) + '</div>' +
+      h += '<div class="two">' + ysel('q_year', t('year')) + fld('q_price', t('price'), lk + ' placeholder="62.5"', '', true) + '</div>' +
         '<div class="muted" style="margin:-6px 0 10px">' + t('lakhsHint') + '</div>' +
         '<div class="sec">' + t('photos') + ' <span class="muted">' + t('optional') + '</span></div>' +
         '<div class="muted">' + t('photosHint') + '</div>' +
@@ -288,6 +413,7 @@
     if ($('f_back')) $('f_back').onclick = function () { state.photos = []; renderStart(); };
     $('f_lang').onclick = function () { var keep = readForm(); lang = lang === 'si' ? 'en' : 'si'; $('foot').textContent = t('foot'); renderForm(); fillForm(keep); };
     $('f').onsubmit = submit;
+    wireVehicle();
     if (!buyer) {
       $('ph_add').onclick = function () { $('q_files').click(); };
       $('q_files').onchange = function () { addPhotos(this.files); this.value = ''; };
@@ -305,6 +431,7 @@
   function fillForm(o) {
     FIELDS.forEach(function (k) { var el = $('q_' + k); if (el && o[k] != null) el.value = o[k]; });
     ['leasing', 'consent'].forEach(function (k) { var el = $('q_' + k); if (el && k in o) el.checked = !!o[k]; });
+    if ($('s_make')) setMake(o.make || '', o.model || '');
   }
 
   // ---------- photos: resize + number-plate blur, all in the browser ----------
@@ -422,7 +549,12 @@
       var m = String(ex && ex.message || '');
       err.textContent = (m && m !== 'error' && m.indexOf('Failed to fetch') === -1 && m.indexOf('NetworkError') === -1) ? m : t('e_net');
     }
-    function fail(msg, focusId) { err.textContent = msg; if (focusId && $(focusId)) $(focusId).focus(); }
+    function fail(msg, focusId) {
+      err.textContent = msg;
+      var el = focusId && $(focusId);
+      if (el && el.hidden) el = $(focusId.replace('q_', 's_'));
+      if (el) el.focus();
+    }
   }
 
   function renderDone(d) {
