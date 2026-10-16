@@ -583,10 +583,10 @@ function extBox(o, isBuyer) {
   </div>`;
 }
 
-/* ---------- WhatsApp message helpers (Sinhala) ---------- */
-const lkSi = v => (v === '' || v == null) ? '' : 'රු. ලක්ෂ ' + v;
+/* ---------- WhatsApp message helpers ---------- */
+const lkSi = v => (v === '' || v == null) ? '' : 'Rs. ' + v + ' Lakhs';
 function wantSi(b) {
-  const w = [b.make, b.model].filter(Boolean).join(' ') || b.vehicle_type || 'වාහනයක්';
+  const w = [b.make, b.model].filter(Boolean).join(' ') || b.vehicle_type || 'a vehicle';
   const y = (b.year_from || b.year_to) ? ` (${b.year_from || ''}–${b.year_to || ''})` : '';
   return w + y;
 }
@@ -777,8 +777,8 @@ function blurEditor(dataUrl, n, total) {
       c.width = img.naturalWidth; c.height = img.naturalHeight;
       const boxes = autoPlateBoxes(img, c);
       back.querySelector('#pe_auto').innerHTML = boxes.length
-        ? '✅ Number plate එක ඉබේම blur කළා. හරිද බලන්න — වැරදි නම් <b>Undo</b> ඔබලා plate එක උඩින් box එකක් අඳින්න.'
-        : 'Number plate එක හොයාගන්න බැරි වුණා — plate එක උඩින් ඇඟිල්ලෙන් box එකක් අඳින්න.';
+        ? '✅ The number plate has been blurred automatically. Please check it. If it is not correct, tap <b>Undo</b> and draw a box over the plate.'
+        : 'The number plate could not be detected. Please draw a box over the plate with your finger.';
       let start = null, cur = null;
 
       const redraw = () => {
@@ -1245,7 +1245,7 @@ async function deleteRecord(kind, id) {
 function showroomUrl() { return (S.formUrl || '').replace('request.html', 'vehicles.html'); }
 function myFormLink() { return (S.formUrl || '') + '?ref=' + encodeURIComponent(S.user.username); }
 function waShareLink() {
-  const t = 'ඔබට වාහනයක් ගන්න හෝ විකුණන්න අවශ්‍යද? මෙතනින් විස්තර එවන්න — අපි ඔබව අමතන්නම්. / Want to buy or sell a vehicle? Send your details here: ' + myFormLink();
+  const t = 'Looking to buy or sell a vehicle? Send us your details here and we will contact you: ' + myFormLink();
   return 'https:/' + '/wa.me/?text=' + encodeURIComponent(t);
 }
 function copyMyLink() {
@@ -1292,7 +1292,7 @@ function leadCard(l) {
       ${statusBadge(l.status, ['New'])}</div>
     <div>${ic(buyer ? 'search' : 'car')} ${esc(l.summary)}</div>
     ${l.notes ? `<div class="sub">${ic('note')} ${esc(l.notes)}</div>` : ''}
-    <div class="sub">${ic('globe')} ${l.ref ? 'Via link of ' + esc(l.ref) : 'General link (round-robin)'}${l.source ? ' · source: ' + esc(l.source) : ''}${l.email ? ' · ' + esc(l.email) : ''} · ${si ? 'සිංහල' : 'English'}</div>
+    <div class="sub">${ic('globe')} ${l.ref ? 'Via link of ' + esc(l.ref) : 'General link (round-robin)'}${l.source ? ' · source: ' + esc(l.source) : ''}${l.email ? ' · ' + esc(l.email) : ''} · ${si ? 'Sinhala' : 'English'}</div>
     ${l.status === 'Rejected' && l.reject_reason ? `<div class="sub">${ic('ban')} ${esc(l.reject_reason)}</div>` : ''}
     ${l.status === 'Converted' ? `<div class="sub">${ic('check')} Saved as ${esc(l.converted_id)}</div>` : ''}
     <div class="actions">
@@ -1438,11 +1438,11 @@ function groupShareLink(rec, isBuyer) {
   const join = a => a.filter(x => x !== '' && x != null && String(x).trim()).join(' ');
   const car = join([rec.make, rec.model]) || rec.vehicle_type || '';
   const lines = isBuyer ? [
-    '🔎 *ගැනුම්කරුවෙක් ඉන්නවා (Buyer wanted)*',
+    '🔎 *Buyer wanted*',
     'Vehicle: ' + (join([car, rec.year_from || rec.year_to ? '(' + (rec.year_from || '…') + '–' + (rec.year_to || '…') + ')' : '']) || '-'),
     'Budget: ' + (rec.min_budget ? 'Rs. ' + rec.min_budget + '–' + rec.max_budget + ' Lakhs' : lk(rec.max_budget))
   ] : [
-    '🚗 *විකිණීමට වාහනයක් (Vehicle for sale)*',
+    '🚗 *Vehicle for sale*',
     'Vehicle: ' + (join([car, rec.year]) || '-'),
     'Price: ' + lk(rec.price)
   ];
@@ -1473,7 +1473,7 @@ function renderResults() {
       <div class="row">
         <button class="btn" onclick="go('${isBuyer ? 'buyerForm' : 'vehicleForm'}',{id:'${esc(p.id)}'})">${ic('edit')} Edit details</button>
         ${!isBuyer && photoLink(rec) ? photoLink(rec) : ''}
-        ${p.pending ? '' : `<a class="btn wa" target="_blank" rel="noopener" href="${groupShareLink(rec, isBuyer)}">${ic('message')} 📢 Group එකට යවන්න</a>`}
+        ${p.pending ? '' : `<a class="btn wa" target="_blank" rel="noopener" href="${groupShareLink(rec, isBuyer)}">${ic('message')} 📢 Share to group</a>`}
         <button class="btn primary" onclick="go('newcall')">${ic('phone')} Add new call</button>
       </div>
     </div>
@@ -1526,7 +1526,7 @@ function buyerCard(b) {
         ${statusBadge(b.status, ['Active'])}</div>
       <div>${ic('search')} ${esc(wantName(b))} · Budget ${esc(lk(b.max_budget))}</div>
       <div class="actions">${extButtons(b, true)}</div>
-      ${officerBlock(b.officer, `ආයුබෝවන් ${b.officer && b.officer.name || ''}, ඔබ යටතේ ලියාපදිංචි කර ඇති ${wantSi(b)} සොයන ගැනුම්කරුවෙකු ගැන මට ඇමතුමක් ලැබුණා.`)}
+      ${officerBlock(b.officer, `Hello ${b.officer && b.officer.name || ''}, I received a call regarding your registered buyer who is looking for ${wantSi(b)}.`)}
     </div>`;
   }
   return `<div class="card rec buyer">
@@ -1577,7 +1577,7 @@ function vehicleCard(v) {
       <div class="sub">${[v.mileage ? v.mileage + ' km' : '', v.fuel, v.transmission, v.condition, v.district].filter(Boolean).map(esc).join(' · ')}</div>
       </div></div>
       <div class="actions">${photoLink(v)}${extButtons(v, false)}</div>
-      ${officerBlock(v.officer, `ආයුබෝවන් ${v.officer && v.officer.name || ''}, ඔබ යටතේ ලියාපදිංචි කර ඇති ${carName(v)} වාහනය ගැන මට ඇමතුමක් ලැබුණා.`)}
+      ${officerBlock(v.officer, `Hello ${v.officer && v.officer.name || ''}, I received a call regarding the ${carName(v)} registered under you.`)}
     </div>`;
   }
   return `<div class="card rec seller">
@@ -1765,11 +1765,11 @@ function matchCard(m, only) {
   const b = m.buyer, v = m.vehicle, id = esc(m.matchId);
   const cls = m.score >= 80 ? 'hi' : m.score >= 60 ? 'mid' : 'lo';
   const car = carName(v);
-  const waB = `ආයුබෝවන් ${b.name || ''}, ඔබ සොයන ආකාරයේ ${car} වාහනයක් විකිණීමට තිබෙනවා. මිල ${lkSi(v.price)}. වැඩි විස්තර අවශ්‍යද?`;
-  const waS = `ආයුබෝවන් ${v.owner_name || ''}, ඔබගේ ${car} වාහනය මිලදී ගැනීමට කැමති ගැනුම්කරුවෙක් සිටිනවා. එය තවමත් විකිණීමට තිබෙනවාද?`;
+  const waB = `Hello ${b.name || ''}, a ${car} matching your requirements is available for sale at ${lkSi(v.price)}. Would you like more details?`;
+  const waS = `Hello ${v.owner_name || ''}, we have a buyer interested in your ${car}. Is it still available for sale?`;
   // Messages to the other officer (their customer is hidden)
-  const waBO = `ආයුබෝවන් ${b.officer && b.officer.name || ''}, ඔබගේ ගැනුම්කරු සොයන ${wantSi(b)} සඳහා ගැලපෙන වාහනයක් මා සතුව තිබෙනවා — ${car}, ${lkSi(v.price)}. ඔවුන් සම්බන්ධ කර දිය හැකිද?`;
-  const waSO = `ආයුබෝවන් ${v.officer && v.officer.name || ''}, ඔබගේ ${car} වාහනය (${lkSi(v.price)}) මිලදී ගැනීමට කැමති ගැනුම්කරුවෙක් මා සතුව සිටිනවා. එය තවමත් විකිණීමට තිබෙනවාද?`;
+  const waBO = `Hello ${b.officer && b.officer.name || ''}, I have a vehicle that matches your buyer's search for ${wantSi(b)}: ${car}, ${lkSi(v.price)}. Could you put us in touch?`;
+  const waSO = `Hello ${v.officer && v.officer.name || ''}, I have a buyer interested in your ${car} (${lkSi(v.price)}). Is it still available for sale?`;
   const mineTag = '<span class="mine-tag">Your customer</span>';
   return `<div class="card match">
     <div class="top"><span class="score ${cls}">${m.score}%</span>
