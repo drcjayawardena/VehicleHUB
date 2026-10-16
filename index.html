@@ -300,6 +300,7 @@
 
   <script src="config.js"></script>
   <script src="plate.js"></script>
+  <script src="years.js"></script>
   <script>
     /* ============================================================
      *  WEBSITE MODE (GitHub Pages)
@@ -1126,8 +1127,13 @@ async function doLookup(e) {
 }
 
 /* ============================================================
- *  VEHICLE TYPE → MAKE → MODEL pickers
+ *  VEHICLE TYPE → MAKE → MODEL → YEAR pickers
+ *  Real dropdowns that depend on each other: a new type clears Make and Model,
+ *  a new Make clears Model, and Year only lists the years the chosen model was
+ *  made (years.js). "Other…" shows a text box for a make / model not in the list.
+ *  The text boxes p_make / p_model always hold the value that is saved.
  * ============================================================ */
+const OTHER = '__other';
 function makesFor(type) {
   return uniq(S.master.filter(m => !type || norm(m.vehicle_type) === norm(type)).map(m => m.make));
 }
@@ -1135,25 +1141,94 @@ function modelsFor(type, make) {
   return uniq(S.master.filter(m => (!type || norm(m.vehicle_type) === norm(type)) &&
     (!make || norm(m.make) === norm(make))).map(m => m.model));
 }
-function updateMakes(p) {
-  $(p + '_dl_make').innerHTML = makesFor($(p + '_vehicle_type').value).map(x => `<option value="${esc(x)}">`).join('');
-  updateModels(p);
+/** Years (newest first) the model was made; every year from VH_FIRST_YEAR if unknown. */
+function yearsFor(make, model) {
+  const Y = window.VH_YEARS || {}, first = window.VH_FIRST_YEAR || 1980, now = new Date().getFullYear();
+  const mk = Object.keys(Y).find(k => norm(k) === norm(make));
+  const md = mk && Object.keys(Y[mk]).find(k => norm(k) === norm(model));
+  const r = md ? Y[mk][md] : [first, 0], out = [];
+  for (let y = r[1] || now; y >= Math.max(r[0], first); y--) out.push(String(y));
+  return out;
 }
-function updateModels(p) {
-  $(p + '_dl_model').innerHTML = modelsFor($(p + '_vehicle_type').value, $(p + '_make').value)
-    .map(x => `<option value="${esc(x)}">`).join('');
+/** Fill one Make / Model dropdown and its "Other" text box with `value`. */
+function fillPick(p, k, list, value) {
+  const s = $(p + '_s_' + k), i = $(p + '_' + k);
+  const known = list.find(x => norm(x) === norm(value)) || '';
+  s.innerHTML = opts(list, known, s.dataset.blank) + `<option value="${OTHER}">Other (type new)…</option>`;
+  s.value = known || (value ? OTHER : '');
+  showOther(p, k);
+  i.value = known || value || '';
+}
+function showOther(p, k) {
+  const s = $(p + '_s_' + k), i = $(p + '_' + k), other = s.value === OTHER && !s.hidden;
+  i.hidden = !other && !s.hidden;
+  s.required = !!s.dataset.req && !s.hidden;   // a hidden required field would block saving
+  i.required = !!s.dataset.req && !i.hidden;
+}
+/** Vehicle type changed (or first draw): rebuild Make, then Model and Year. */
+function updateMakes(p, make, model, keepYears) {
+  fillPick(p, 'make', makesFor($(p + '_vehicle_type').value), make || '');
+  updateModels(p, model || '', keepYears);
+}
+/** Make changed: rebuild Model (cleared unless `model` is given), then Year. */
+function updateModels(p, model, keepYears) {
+  const s = $(p + '_s_model'), make = $(p + '_make').value.trim();
+  const list = make ? modelsFor($(p + '_vehicle_type').value, make) : [];
+  if (!make) {
+    s.innerHTML = `<option value="">${esc(s.dataset.blank === 'Any' ? 'Any' : '— Pick a make first —')}</option>`;
+    s.disabled = true; s.hidden = false; $(p + '_model').value = ''; showOther(p, 'model');
+  } else if (!list.length) {   // a new make: no models known yet, so type the model
+    s.hidden = true; s.disabled = false; $(p + '_model').value = model || ''; showOther(p, 'model');
+  } else {
+    s.disabled = false; s.hidden = false; fillPick(p, 'model', list, model || '');
+  }
+  updateYears(p, keepYears);
+}
+/** A Make / Model dropdown was changed by the user. */
+function pickChanged(p, k) {
+  const s = $(p + '_s_' + k), i = $(p + '_' + k);
+  i.value = s.value === OTHER ? '' : s.value;
+  showOther(p, k);
+  if (s.value === OTHER) i.focus();
+  if (k === 'make') updateModels(p, ''); else updateYears(p);
+}
+/** Rebuild the Year dropdowns for the chosen make / model. A year that the model
+ *  was not made in is cleared (kept only when opening a saved record). */
+function updateYears(p, keepOld) {
+  const list = yearsFor($(p + '_make').value, $(p + '_model').value);
+  ['year', 'year_from', 'year_to'].forEach(n => {
+    const el = $(p + '_' + n); if (!el) return;
+    const keep = el.value || el.dataset.value || '', l = list.slice();
+    if (keepOld && keep && !l.includes(keep)) l.unshift(keep);
+    el.innerHTML = opts(l, '', el.dataset.blank);
+    el.value = l.includes(keep) ? keep : '';
+    delete el.dataset.value;
+  });
+  limitYearTo(p);
+}
+/** Buyer: "Year (to)" can not be before "Year (from)". */
+function limitYearTo(p) {
+  const f = $(p + '_year_from'), t = $(p + '_year_to'); if (!f || !t) return;
+  [...t.options].forEach(o => { o.disabled = !!(o.value && f.value && Number(o.value) < Number(f.value)); });
+  if (t.value && f.value && Number(t.value) < Number(f.value)) t.value = '';
 }
 function vehiclePickers(p, r, anyLabel) {
-  const req = !anyLabel;
+  const req = !anyLabel, blank = anyLabel || '— Select —';
+  const pick = (k, label, ph) => `
+    <label class="f ${req ? 'req' : ''}"><span>${label}</span>
+      <select id="${p}_s_${k}" data-blank="${esc(blank)}" ${req ? 'data-req="1" required' : ''} onchange="pickChanged('${p}','${k}')"></select>
+      <input id="${p}_${k}" value="${esc(r[k])}" placeholder="${ph}" autocomplete="off"
+        oninput="${k === 'make' ? `updateModels('${p}', $('${p}_model').value)` : `updateYears('${p}')`}" style="margin-top:6px" hidden></label>`;
   return `
     <label class="f ${req ? 'req' : ''}"><span>Vehicle type</span>
-      <select id="${p}_vehicle_type" onchange="updateMakes('${p}')" ${req ? 'required' : ''}>${opts(S.lists.VEHICLE_TYPE, r.vehicle_type, anyLabel || '— Select —')}</select></label>
-    <label class="f ${req ? 'req' : ''}"><span>Make (Brand)</span>
-      <input id="${p}_make" list="${p}_dl_make" value="${esc(r.make)}" oninput="updateModels('${p}')" placeholder="${anyLabel ? 'Any' : 'e.g. Toyota'}" ${req ? 'required' : ''}>
-      <datalist id="${p}_dl_make"></datalist></label>
-    <label class="f ${req ? 'req' : ''}"><span>Model</span>
-      <input id="${p}_model" list="${p}_dl_model" value="${esc(r.model)}" placeholder="${anyLabel ? 'Any' : 'e.g. Aqua'}" ${req ? 'required' : ''}>
-      <datalist id="${p}_dl_model"></datalist></label>`;
+      <select id="${p}_vehicle_type" onchange="updateMakes('${p}')" ${req ? 'required' : ''}>${opts(S.lists.VEHICLE_TYPE, r.vehicle_type, blank)}</select></label>
+    ${pick('make', 'Make (Brand)', 'Type the new make')}
+    ${pick('model', 'Model', 'Type the new model')}`;
+}
+/** Year dropdown; its list is filled by updateYears(). */
+function yearSel(p, name, label, value, blank) {
+  return `<label class="f"><span>${label}</span><select id="${p}_${name}" data-blank="${esc(blank)}" data-value="${esc(value)}"
+    ${name === 'year_from' ? `onchange="limitYearTo('${p}')"` : ''}></select></label>`;
 }
 function fld(p, name, label, value, attrs, cls) {
   return `<label class="f ${cls || ''}"><span>${label}</span><input id="${p}_${name}" value="${esc(value)}" ${attrs || ''}></label>`;
@@ -1174,7 +1249,6 @@ const BUYER_FIELDS = ['name', 'phone', 'phone2', 'vehicle_type', 'make', 'model'
 function viewBuyerForm() {
   const id = S.params.id;
   const b = id ? (S.rec[id] || {}) : Object.assign({ phone: S.params.phone || '', status: 'Active' }, S.params.prefill || {});
-  const yr = new Date().getFullYear();
   setMain(`
     <div class="card narrow">
       <h2 style="margin-top:0" id="bf_title">${id ? ic('edit', 'h') + ' Buyer edit — ' + esc(id) : ic('user', 'h') + ' New Buyer'}</h2>
@@ -1186,8 +1260,8 @@ function viewBuyerForm() {
 
         <div class="sec">${ic('car')} Vehicle wanted <span class="muted">(leave blank = any)</span></div>
         ${vehiclePickers('b', b, 'Any')}
-        ${fld('b', 'year_from', 'Year (from)', b.year_from, `type="number" min="1970" max="${yr + 1}" placeholder="2014"`)}
-        ${fld('b', 'year_to', 'Year (to)', b.year_to, `type="number" min="1970" max="${yr + 1}" placeholder="${yr}"`)}
+        ${yearSel('b', 'year_from', 'Year (from)', b.year_from, 'Any')}
+        ${yearSel('b', 'year_to', 'Year (to)', b.year_to, 'Any')}
 
         <div class="sec">${ic('tag')} Budget (in Lakhs)</div>
         ${fld('b', 'min_budget', 'Minimum (Lakhs)', b.min_budget, 'type="number" step="0.1" min="0" placeholder="50"')}
@@ -1201,7 +1275,7 @@ function viewBuyerForm() {
       </form>
     </div>
     <div id="afterSave"></div>`);
-  updateMakes('b');
+  updateMakes('b', b.make, b.model, true);
   if (id) showRecordMatches({ buyerId: id }, 'Vehicles matching this buyer');
 }
 
@@ -1362,7 +1436,6 @@ const VEHICLE_FIELDS = ['owner_name', 'owner_phone', 'phone2', 'vehicle_type', '
 function viewVehicleForm() {
   const id = S.params.id;
   const v = id ? (S.rec[id] || {}) : Object.assign({ owner_phone: S.params.phone || '', status: 'Available' }, S.params.prefill || {});
-  const yr = new Date().getFullYear();
   setMain(`
     <div class="card narrow">
       <h2 style="margin-top:0" id="vf_title">${id ? ic('edit', 'h') + ' Vehicle edit — ' + esc(id) : ic('car', 'h') + ' New Vehicle for Sale (Seller)'}</h2>
@@ -1374,7 +1447,7 @@ function viewVehicleForm() {
 
         <div class="sec">${ic('car')} Vehicle</div>
         ${vehiclePickers('v', v)}
-        ${fld('v', 'year', 'Year (YOM)', v.year, `type="number" min="1970" max="${yr + 1}" placeholder="2015"`)}
+        ${yearSel('v', 'year', 'Year (YOM)', v.year, '— Select —')}
         ${sel('v', 'condition', 'Condition', S.lists.CONDITION, v.condition, '— Select —')}
         ${fld('v', 'color', 'Color', v.color, 'placeholder="White"')}
 
@@ -1399,7 +1472,7 @@ function viewVehicleForm() {
       </form>
     </div>
     <div id="afterSave"></div>`);
-  updateMakes('v');
+  updateMakes('v', v.make, v.model, true);
   if (id) showRecordMatches({ vehicleId: id }, 'Buyers matching this vehicle');
 }
 
