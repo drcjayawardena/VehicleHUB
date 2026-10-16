@@ -225,14 +225,14 @@
       sell: 'මගේ වාහනය විකුණන්න ඕනෑ', sellS: 'ඔබේ වාහනයට ගැනුම්කරුවෙක් හොයලා දෙන්නම්',
       showroom: 'විකිණීමට ඇති වාහන බලන්න',
       back: 'ආපසු', buyTitle: 'ඔබට ඕනෑ වාහනය', sellTitle: 'ඔබේ වාහනය',
-      vtype: 'වාහන වර්ගය', any: 'ඕනෑම එකක්', select: '— තෝරන්න —', otherOpt: 'වෙනත්…', pickMake: 'මුලින් Make තෝරන්න', make: 'Make (සමාගම)', model: 'Model',
-      makePh: 'උදා: Toyota', modelPh: 'උදා: Aqua', notSure: 'විශ්වාස නැත්නම් හිස්ව තියන්න',
+      vtype: 'වාහන වර්‍ගය', any: 'ඕනෑම එකක්', select: '— තෝරන්න —', otherOpt: 'වෙනත්…', pickMake: 'මුලින් Make තෝරන්න', make: 'Make', model: 'Model',
+      makePh: 'උදා: Toyota', modelPh: 'උදා: Aqua', notSure: 'අවශ්‍ය නෑ',
       yFrom: 'අවුරුද්ද (සිට)', yTo: 'අවුරුද්ද (දක්වා)', budMin: 'අවම මුදල (ලක්ෂ)', budMax: 'උපරිම මුදල (ලක්ෂ)',
       lakhsHint: 'උදා: රු. 6,250,000 = 62.5',
       leasing: 'මට leasing / finance ඕනෑ',
-      you: 'ඔබේ විස්තර', name: 'ඔබේ නම', phone: 'දුරකථන / WhatsApp අංකය', email: 'Email', optional: '(අනිවාර්ය නැත)',
+      you: 'ඔබේ විස්තර', name: 'ඔබේ නම', phone: 'දුරකථන / WhatsApp අංකය', email: 'Email', optional: '(අනිවාර්‍ය නැත)',
       notes: 'වෙනත් විස්තර', notesPh: 'උදා: පාට වැදගත් නැහැ, ඉක්මනට ඕනෑ',
-      consent: 'මාව සම්බන්ධ කරගන්න VehicleHub නියෝජිතයෙකුට මගේ විස්තර පාවිච්චි කරන්න මම එකඟයි. මගේ අංකය වෙන කිසිවෙකුට දෙන්නේ නැහැ.',
+      consent: 'මාව සම්බන්ධ කරගන්න VehicleHub නියෝජිතයෙකුට මගේ විස්තර පාවිච්චි කරන්න මම එකඟයි. මගේ අංකය වෙන කිසිවෙකුට දෙන්න එපා.',
       send: 'Request එක යවන්න', sending: 'යවමින්…',
       e_name: 'කරුණාකර ඔබේ නම දාන්න.', e_phone: 'හරි mobile අංකයක් දාන්න (07XXXXXXXX).',
       e_email: 'Email ලිපිනය හරි නැහැ.', e_consent: 'කරුණාකර එකඟතා box එක tick කරන්න.',
@@ -251,7 +251,7 @@
       photos: 'Photos', photosHint: '5ක් දක්වා. Number plate එක ඉබේම blur වෙනවා — හැම photo එකකම බලලා හදන්න පුළුවන්.',
       addPhotos: 'Photos දාන්න', e_seller: 'කරුණාකර make, model සහ මිල දාන්න.',
       pe_t: function (n, t) { return 'Photo ' + n + ' / ' + t + ' — number plate එක බලන්න'; },
-      pe_h: 'ඇඟිල්ලෙන් ඇදලා box අඳින්න පුළුවන්. ඒ කොටස සම්පූර්ණයෙන්ම වැහෙනවා.',
+      pe_h: 'ඇඟිල්ලෙන් ඇදලා box අඳින්න පුළුවන්. ඒ කොටස සම්පූර්‍ණයෙන්ම වැහෙනවා.',
       pe_undo: 'Undo', pe_skip: 'මේ photo එක අයින් කරන්න', pe_ok: 'හරි',
       pe_auto: 'Number plate එක ඉබේම blur කළා. හරිද බලන්න — වැරදි නම් Undo ඔබලා plate එක උඩින් box එකක් අඳින්න.',
       pe_none: 'Number plate එක හොයාගන්න බැරි වුණා — plate එක උඩින් ඇඟිල්ලෙන් box එකක් අඳින්න.',
@@ -384,7 +384,7 @@
       '</div>' + (buyer ? '<div class="muted" style="margin:-6px 0 10px">' + t('notSure') + '</div>' : '');
     if (buyer) {
       h += quick
-        ? '<div class="two">' + fld('q_max_budget', t('budMax'), lk + ' placeholder="60"', '', true) + ysel('q_year_from', t('yFrom')) + '</div>'
+        ? '<div class="two">' + ysel('q_year_from', t('yFrom')) + fld('q_max_budget', t('budMax'), lk + ' placeholder="60"', '', true) + '</div>'
         : '<div class="two">' + ysel('q_year_from', t('yFrom')) + ysel('q_year_to', t('yTo')) + '</div>' +
           '<div class="two">' + fld('q_min_budget', t('budMin'), lk + ' placeholder="40"') + fld('q_max_budget', t('budMax'), lk + ' placeholder="60"', '', true) + '</div>';
       h +=
