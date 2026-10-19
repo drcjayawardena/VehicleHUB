@@ -365,6 +365,7 @@
  * ============================================================ */
 const S = { token: null, user: null, lists: {}, master: [], view: '', params: {},
             rec: {}, buyers: [], vehicles: [], matches: [], mIndex: {}, thumbs: {} };
+const EMBED_MODE = new URLSearchParams(window.location.search).get('embed') === 'mastercal';
 
 const $ = id => document.getElementById(id);
 
@@ -902,7 +903,7 @@ function applyInit(r) {
   try { localStorage.setItem('vehiclehub_username', S.user.username || ''); } catch (e) {}   // MasterCAL quotations link customers to this officer
   renderShell();
   checkVersions(r.versions);
-  go('dashboard');
+  go(EMBED_MODE ? 'vehicles' : 'dashboard');
 }
 
 /** Warns clearly when the three files are from different updates. */
@@ -1038,9 +1039,9 @@ function renderShell() {
         <div class="brand"><img class="brand-logo" src="${logoSrc('vmLogoRound')}" alt=""><span>Vehicle<b>Hub</b></span></div>
         <div class="who"><span class="uname">${ic('user')} <span id="unameText">${esc(S.user.full_name)}</span></span><button onclick="logout()">${ic('logout')} Logout</button></div>
       </div>
-      <nav id="nav">${TABS.filter(t => !t[3] || S.user.role === 'admin').map(t =>
+      <nav id="nav">${TABS.filter(t => EMBED_MODE ? ['vehicles', 'buyers', 'matches'].includes(t[0]) : (!t[3] || S.user.role === 'admin')).map(t =>
         `<button data-v="${t[0]}" onclick="go('${t[0]}')">${ic(t[1])}<span>${t[2]}</span><em class="navcount" id="nc_${t[0]}"></em></button>`).join('')}
-        <a class="fbnav" href="${FACEBOOK_URL}" target="_blank" rel="noopener">${ic('facebook')}<span>Facebook</span></a></nav>
+        ${EMBED_MODE ? '' : `<a class="fbnav" href="${FACEBOOK_URL}" target="_blank" rel="noopener">${ic('facebook')}<span>Facebook</span></a>`}</nav>
     </header>
     <main id="main"></main>
     <div id="verwarn" class="verwarn" style="display:none"></div>`;
