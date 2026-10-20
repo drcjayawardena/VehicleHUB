@@ -554,17 +554,13 @@ function extSearchUrls(o, isBuyer) {
     if (mk) { rs += '/' + mk; if (md) { rs += '/' + md; if (yf && yt) rs += '/' + yf + '-' + yt; } }
   }
 
-  // ikman.lk/en/ads/sri-lanka/<category>/<make>/<model>  (or keyword search)
-  let ik;
-  const it = IK_TYPE[type];
-  // ikman uses its own spellings for multi-word names (e.g. "wagonr"), so those use keyword search
-  const simple = !/-/.test(mk) && !/-/.test(md);
-  if (it && simple) {
-    ik = 'https://ikman.lk/en/ads/sri-lanka/' + it + (mk ? '/' + mk + (md ? '/' + md : '') : '');
-  } else {
-    const q = slugify([o.make, o.model].filter(Boolean).join(' ') || o.vehicle_type || 'vehicles');
-    ik = 'https://ikman.lk/en/ads/q/sri-lanka/' + q;
-  }
+  // Use ikman's keyword-search route consistently. Category/model slugs can
+  // resolve to an error page for valid vehicles (for example Honda Shuttle).
+  // Include the buyer's year range so the search is more useful.
+  const ikTerms = [o.make, o.model, yf && yt ? `${yf} ${yt}` : (yf || yt)]
+    .filter(Boolean).join(' ');
+  const ik = 'https://ikman.lk/en/ads/q/sri-lanka/' +
+    slugify(ikTerms || o.vehicle_type || 'vehicles');
   return { ikman: ik, riyasewana: rs };
 }
 
