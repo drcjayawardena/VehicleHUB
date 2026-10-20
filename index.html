@@ -270,6 +270,10 @@
       .grid, .grid.wide { grid-template-columns: 1fr; }
       .who .uname { display: none; }
     }
+    /* Hide standalone navigation only while this page is embedded in MasterCAL. */
+    html.mastercal-embed header { display: none !important; }
+    html.mastercal-embed main { margin: 0 !important; max-width: none !important; padding: 12px !important; }
+    html.mastercal-embed main > * { max-width: none !important; }
   </style>
 </head>
 <body>
@@ -366,6 +370,15 @@
 const S = { token: null, user: null, lists: {}, master: [], view: '', params: {},
             rec: {}, buyers: [], vehicles: [], matches: [], mIndex: {}, thumbs: {} };
 const EMBED_MODE = new URLSearchParams(window.location.search).get('embed') === 'mastercal';
+const EMBED_VIEWS = new Set(['vehicles', 'buyers', 'matches']);
+const EMBED_INITIAL_VIEW = new URLSearchParams(window.location.search).get('view');
+if (EMBED_MODE) document.documentElement.classList.add('mastercal-embed');
+
+window.addEventListener('message', function (event) {
+  if (!EMBED_MODE || event.origin !== location.origin || event.source !== window.parent) return;
+  const data = event.data || {};
+  if (data.type === 'mastercal:show-view' && EMBED_VIEWS.has(data.view) && S.token) go(data.view);
+});
 
 const $ = id => document.getElementById(id);
 
@@ -903,7 +916,9 @@ function applyInit(r) {
   try { localStorage.setItem('vehiclehub_username', S.user.username || ''); } catch (e) {}   // MasterCAL quotations link customers to this officer
   renderShell();
   checkVersions(r.versions);
-  go(EMBED_MODE ? 'vehicles' : 'dashboard');
+  const initialView = EMBED_MODE && EMBED_VIEWS.has(EMBED_INITIAL_VIEW) ? EMBED_INITIAL_VIEW : 'vehicles';
+  go(EMBED_MODE ? initialView : 'dashboard');
+  if (EMBED_MODE) window.parent.postMessage({ type: 'vehiclehub:ready', view: initialView }, location.origin);
 }
 
 /** Warns clearly when the three files are from different updates. */
