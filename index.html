@@ -928,7 +928,7 @@ function renderLogin() {
     <div class="login"><form class="card" onsubmit="doLogin(event)">
       <img class="login-logo" src="${logoSrc('vmLogoWide')}" alt="VehicleHub">
       <div class="muted" style="text-align:center">Officer portal — match vehicle buyers with sellers</div>
-      <label class="f"><span>Username</span><input id="lg_u" autocomplete="username" required></label>
+      <label class="f"><span>WhatsApp number (or previous username)</span><input id="lg_u" autocomplete="username" required></label>
       <label class="f"><span>Password</span><input id="lg_p" type="password" autocomplete="current-password" required></label>
       <div class="err" id="lg_err"></div>
       <div class="ok" id="lg_ok"></div>
@@ -945,11 +945,10 @@ function renderRegister() {
     <div class="login"><form class="card" onsubmit="doRegister(event)">
       <img class="login-logo small" src="${logoSrc('vmLogoWide')}" alt="VehicleHub">
       <h1>${ic('userPlus')} Create an account</h1>
-      <div class="muted">After you register, the admin must approve your account before you can log in.</div>
+      <div class="muted">Your WhatsApp number is your username. After you register, the admin must approve your Officer account before you can log in.</div>
       <label class="f req"><span>Full name</span><input id="rg_n" required autocomplete="name"></label>
-      <label class="f req"><span>Mobile number</span><input id="rg_p" type="tel" inputmode="tel" placeholder="07XXXXXXXX" required autocomplete="tel"></label>
+      <label class="f req"><span>WhatsApp number</span><input id="rg_p" type="tel" inputmode="tel" placeholder="07XXXXXXXX" required autocomplete="tel"></label>
       <label class="f req"><span>Email <span class="muted">(for new-match alerts)</span></span><input id="rg_e" type="email" required autocomplete="email" placeholder="name@gmail.com"></label>
-      <label class="f req"><span>Username</span><input id="rg_u" required pattern="[a-zA-Z0-9._\-]{3,}" autocomplete="username" placeholder="e.g. kasun"></label>
       <label class="f req"><span>Password</span><input id="rg_pw" type="password" minlength="6" required autocomplete="new-password"></label>
       <label class="f req"><span>Confirm password</span><input id="rg_pw2" type="password" minlength="6" required autocomplete="new-password"></label>
       <div class="err" id="rg_err"></div>
@@ -967,7 +966,7 @@ function doRegister(e) {
   google.script.run
     .withSuccessHandler(r => {
       netEnd();
-      const uname = $('rg_u').value;
+      const uname = $('rg_p').value;
       renderLogin();
       $('lg_u').value = uname; $('lg_p').focus();
       $('lg_ok').textContent = r.needsApproval
@@ -979,7 +978,7 @@ function doRegister(e) {
       $('rg_err').textContent = String(err.message || err).replace(/^Error:\s*/, '');
       btn.disabled = false;
     })
-    .register({ full_name: $('rg_n').value, phone: $('rg_p').value, email: $('rg_e').value, username: $('rg_u').value, password: $('rg_pw').value });
+    .register({ full_name: $('rg_n').value, phone: $('rg_p').value, email: $('rg_e').value, password: $('rg_pw').value });
 }
 
 async function doLogin(e) {
@@ -1926,9 +1925,8 @@ function viewSettings() {
       <div class="card" style="margin-top:14px">
         <h2 style="margin-top:0">${ic('userPlus', 'h')} Add a new user</h2>
         <form class="form" onsubmit="addUser(event)">
-          <label class="f"><span>Username</span><input id="nu_u" required pattern="[a-zA-Z0-9._\\-]{3,}"></label>
           <label class="f"><span>Full name</span><input id="nu_n"></label>
-          <label class="f req"><span>Mobile number</span><input id="nu_ph" type="tel" inputmode="tel" placeholder="07XXXXXXXX" required></label>
+          <label class="f req"><span>WhatsApp number (username)</span><input id="nu_ph" type="tel" inputmode="tel" placeholder="07XXXXXXXX" required></label>
           <label class="f"><span>Email <span class="muted">(match alerts)</span></span><input id="nu_e" type="email" placeholder="name@gmail.com"></label>
           <label class="f"><span>Password</span><input type="password" id="nu_p" minlength="6" required></label>
           <label class="f"><span>Role</span><select id="nu_r"><option value="staff">Staff</option><option value="admin">Admin</option></select></label>
@@ -1964,9 +1962,9 @@ async function loadUsers() {
   const r = await call('listUsers');
   if (!r || !$('usersBox')) return;
   $('usersBox').innerHTML = `<table class="utable">
-    <tr><th>Username</th><th>Name</th><th>Mobile</th><th>Email</th><th>Role</th><th>Active</th><th>Reset password</th><th></th></tr>
+    <tr><th>WhatsApp login</th><th>Name</th><th>Mobile</th><th>Email</th><th>Role</th><th>Active</th><th>Reset password</th><th></th></tr>
     ${r.users.map(u => { const k = esc(u.username); return `<tr>
-      <td><b>${k}</b>${u.pending ? ' <span class="badge warn">Pending</span>' : ''}</td>
+      <td><b>${esc(u.phone || u.username)}</b>${u.pending ? ' <span class="badge warn">Pending</span>' : ''}</td>
       <td><input id="u_n_${k}" value="${esc(u.full_name)}"></td>
       <td><input id="u_p_${k}" type="tel" value="${esc(u.phone)}" placeholder="07XXXXXXXX" style="min-width:120px"></td>
       <td><input id="u_e_${k}" type="email" value="${esc(u.email)}" placeholder="(no alerts)" style="min-width:170px"></td>
@@ -2013,7 +2011,7 @@ async function changePw(e) {
 }
 async function addUser(e) {
   e.preventDefault();
-  const r = await call('addUser', { username: $('nu_u').value, full_name: $('nu_n').value,
+  const r = await call('addUser', { full_name: $('nu_n').value,
     password: $('nu_p').value, role: $('nu_r').value, phone: $('nu_ph').value, email: $('nu_e').value });
   if (r) { toast('User added'); e.target.reset(); loadUsers(); }
 }
