@@ -202,6 +202,14 @@
     .rec .actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
     .rec.buyer { border-left: 4px solid var(--buyer); }
     .rec.seller { border-left: 4px solid var(--seller); }
+    .rec .focus-label { color: var(--muted); font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+    .rec .focus-title { color: var(--primary); font-size: 18px; font-weight: 750; line-height: 1.25; }
+    .rec .focus-price { color: var(--accent); font-size: 18px; font-weight: 750; white-space: nowrap; }
+    .rec .focus-meta { color: var(--muted); font-size: 13px; margin-top: 3px; }
+    .rec .focus-budget { background: #f2f6fc; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 8px 10px; }
+    .rec .person-meta { color: var(--muted); font-size: 13px; }
+
+
 
     /* ---------- Match cards ---------- */
     .match { display: flex; flex-direction: column; gap: 10px; }
@@ -1606,18 +1614,21 @@ function renderBuyers() {
 function buyerCard(b) {
   if (b.masked) {
     return `<div class="card rec buyer">
-      <div class="top"><div><div class="title">${ic('user')} Buyer ${esc(b.buyer_id)}</div><div class="muted">Registered by another officer</div></div>
+      <div class="top"><div><div class="focus-label">Looking for</div><div class="focus-title">${ic('search')} ${esc(wantName(b))}</div>
+        <div class="focus-meta">${[b.vehicle_type, b.fuel, b.transmission, b.district].filter(Boolean).map(esc).join(' · ')}</div></div>
         ${statusBadge(b.status, ['Active'])}</div>
-      <div>${ic('search')} ${esc(wantName(b))} · Budget ${esc(lk(b.max_budget))}</div>
+      <div class="focus-budget"><span>Budget</span><strong class="focus-price">${esc(lk(b.max_budget))}</strong></div>
+      <div class="person-meta">${ic('user')} Buyer ${esc(b.buyer_id)} · Registered by another officer</div>
       <div class="actions">${extButtons(b, true)}</div>
       ${officerBlock(b.officer, `Hello ${b.officer && b.officer.name || ''}, I received a call regarding your registered buyer who is looking for ${wantSi(b)}.`)}
     </div>`;
   }
   return `<div class="card rec buyer">
-    <div class="top"><div><div class="title">${esc(b.name)}</div><div class="muted">${esc(b.buyer_id)} · ${esc(fmtDT(b.created_at).slice(0, 10))}</div></div>
+    <div class="top"><div><div class="focus-label">Looking for</div><div class="focus-title">${ic('search')} ${esc(wantName(b))}</div>
+      <div class="focus-meta">${[b.vehicle_type, b.fuel, b.transmission, b.district ? ic('pin') + ' ' + esc(b.district) : ''].filter(Boolean).join(' · ')}</div></div>
       ${statusBadge(b.status, ['Active'])}</div>
-    <div>${ic('search')} ${esc(wantName(b))}</div>
-    <div class="sub">Budget: ${b.min_budget ? esc(b.min_budget) + '–' : ''}${esc(lk(b.max_budget))}${b.fuel ? ' · ' + esc(b.fuel) : ''}${b.transmission ? ' · ' + esc(b.transmission) : ''}${b.district ? ' · ' + ic('pin') + ' ' + esc(b.district) : ''}</div>
+    <div class="focus-budget"><span>Budget${b.min_budget ? ' · ' + esc(b.min_budget) + '–' : ''}</span><strong class="focus-price">${esc(lk(b.max_budget))}</strong></div>
+    <div class="person-meta">${ic('user')} ${esc(b.name)} · ${esc(b.buyer_id)} · ${esc(fmtDT(b.created_at).slice(0, 10))}</div>
     ${b.notes ? `<div class="sub">${ic('note')} ${esc(b.notes)}</div>` : ''}
     <div class="actions">
       <button class="btn sm" onclick="go('buyerForm',{id:'${esc(b.buyer_id)}'})">${ic('edit')} Edit</button>
@@ -1656,20 +1667,25 @@ function vehicleCard(v) {
   if (v.masked) {
     return `<div class="card rec seller">
       <div class="vrow">${thumbHtml(v)}<div>
-      <div class="top"><div><div class="title">${esc(carName(v))} — ${esc(lk(v.price))}</div><div class="muted">${esc(v.vehicle_id)} · Registered by another officer</div></div>
+      <div class="top"><div><div class="focus-label">Vehicle</div><div class="focus-title">${esc(carName(v))}</div>
+        <div class="focus-meta">${esc(v.vehicle_type || '')} · ${esc(v.vehicle_id)}</div></div>
         ${statusBadge(v.status, ['Available'])}</div>
+      <div class="focus-price">${esc(lk(v.price))}</div>
       <div class="sub">${[v.mileage ? v.mileage + ' km' : '', v.fuel, v.transmission, v.condition, v.district].filter(Boolean).map(esc).join(' · ')}</div>
       </div></div>
+      <div class="person-meta">${ic('shield')} Registered by another officer</div>
       <div class="actions">${photoLink(v)}${extButtons(v, false)}</div>
       ${officerBlock(v.officer, `Hello ${v.officer && v.officer.name || ''}, I received a call regarding the ${carName(v)} registered under you.`)}
     </div>`;
   }
   return `<div class="card rec seller">
     <div class="vrow">${thumbHtml(v)}<div>
-    <div class="top"><div><div class="title">${esc(carName(v))} — ${esc(lk(v.price))}</div><div class="muted">${esc(v.vehicle_id)} · ${esc(v.vehicle_type)}${v.show_public === 'Yes' ? ` · <span class="badge">${ic('globe')} On website</span>` : ''}</div></div>
+    <div class="top"><div><div class="focus-label">Vehicle</div><div class="focus-title">${esc(carName(v))}</div>
+      <div class="focus-meta">${esc(v.vehicle_type || '')} · ${esc(v.vehicle_id)}${v.show_public === 'Yes' ? ` · <span class="badge">${ic('globe')} On website</span>` : ''}</div></div>
       ${statusBadge(v.status, ['Available'])}</div>
+    <div class="focus-price">${esc(lk(v.price))}</div>
     <div class="sub">${[v.mileage ? v.mileage + ' km' : '', v.fuel, v.transmission, v.condition, v.color, v.district].filter(Boolean).map(esc).join(' · ')}</div>
-    <div class="sub">${ic('user')} ${esc(v.owner_name)}</div>
+    <div class="person-meta">${ic('user')} ${esc(v.owner_name)}</div>
     </div></div>
     ${v.notes ? `<div class="sub">${ic('note')} ${esc(v.notes)}</div>` : ''}
     <div class="actions">
