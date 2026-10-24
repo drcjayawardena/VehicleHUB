@@ -736,7 +736,7 @@ async function openAdComposer(vehicleId) {
     <div class="ad-controls"><h3>Create social media ad</h3><label class="muted" for="ad_format">Output format</label>
       <select id="ad_format" onchange="changeAdFormat(this.value)"><option value="feed">Facebook / Instagram / WhatsApp — portrait</option><option value="tiktok">TikTok — vertical, unbranded</option></select>
       <label class="muted" for="ad_photo">Vehicle photo</label><select id="ad_photo"><option>Loading photos…</option></select>
-      <div class="ad-tip">Preview, then download or use your phone’s Share menu. Direct publishing needs official account connections and platform approval.</div>
+      <div class="ad-tip">Possible number plates are blurred in the ad image, including older vehicle photos. Review the preview before sharing. Direct publishing needs official account connections and platform approval.</div>
       <button class="btn primary" onclick="downloadVehicleAd()">Download ad image</button><button class="btn green" onclick="shareVehicleAd()">Share ad image</button>
       <button class="btn" onclick="copyVehicleCaption()">Copy caption</button></div></section>`;
   layer.addEventListener('click', e => { if (e.target === layer) closeAdComposer(); }); document.body.appendChild(layer);
@@ -749,12 +749,31 @@ async function openAdComposer(vehicleId) {
 function closeAdComposer() { const el = $('ad_back'); if (el) el.remove(); }
 function changeAdFormat(value) { AD.format = value === 'tiktok' ? 'tiktok' : 'feed'; drawVehicleAd(); }
 async function changeAdPhoto(id) { AD.photoData = ''; if (id) { const r = await call('getPhoto', {vehicleId:AD.vehicle.vehicle_id,fileId:id}); if (r) AD.photoData = r.data || ''; } drawVehicleAd(); }
+function drawPhotoPlateSafe(ctx, img, dx, dy, dw, dh, radius) {
+  const s = Math.max(dw / img.width, dh / img.height);
+  const scaledW = img.width * s, scaledH = img.height * s;
+  const cropX = (scaledW - dw) / 2, cropY = (scaledH - dh) / 2;
+  ctx.save();
+  if (radius) { ctx.beginPath(); ctx.roundRect(dx, dy, dw, dh, radius); ctx.clip(); }
+  ctx.drawImage(img, dx - cropX, dy - cropY, scaledW, scaledH);
+  ctx.restore();
+  const scan = document.createElement('canvas'); scan.width = img.width; scan.height = img.height;
+  const scanCtx = scan.getContext('2d');
+  try {
+    scanCtx.drawImage(img, 0, 0);
+    findPlates(scan).forEach(b => {
+      const x1 = Math.max(dx, dx + b.x * s - cropX), y1 = Math.max(dy, dy + b.y * s - cropY);
+      const x2 = Math.min(dx + dw, dx + (b.x + b.w) * s - cropX), y2 = Math.min(dy + dh, dy + (b.y + b.h) * s - cropY);
+      if (x2 > x1 && y2 > y1) pixelate(ctx, { x: x1, y: y1, w: x2 - x1, h: y2 - y1 });
+    });
+  } catch (e) { /* Cross-origin images cannot be scanned; uploaded files are local/same-origin. */ }
+}
 function drawVehicleAd() {
   const c = $('ad_canvas'), v = AD.vehicle; if (!c || !v) return;
   const vertical = AD.format === 'tiktok', W = 1080, H = vertical ? 1920 : 1350; c.width = W; c.height = H;
   const x = c.getContext('2d'), g = x.createLinearGradient(0,0,W,H); g.addColorStop(0,'#10213f'); g.addColorStop(1,'#07111f'); x.fillStyle=g; x.fillRect(0,0,W,H);
   if (vertical) {
-    if (AD.photoData) { const img = new Image(); img.onload = () => { if (!c.isConnected) return; const s=Math.max(W/img.width,H/img.height),dw=img.width*s,dh=img.height*s; x.drawImage(img,(W-dw)/2,(H-dh)/2,dw,dh); }; img.src=AD.photoData; }
+    if (AD.photoData) { const img = new Image(); img.onload = () => { if (!c.isConnected) return; drawPhotoPlateSafe(x,img,0,0,W,H,0); }; img.src=AD.photoData; }
     return; // TikTok Direct Post assets must omit app branding and promotional overlays.
   }
   if (!vertical) { x.fillStyle='#f28b22'; x.fillRect(64,50,10,H-100); x.font='700 38px system-ui'; x.fillStyle='#fff'; x.fillText('VehicleHUB',100,105); }
@@ -767,12 +786,27 @@ function drawVehicleAd() {
     x.font='500 25px system-ui'; x.fillStyle='#d5dfec'; x.fillText(det.slice(0,75),96,y+158,900);
     x.font='700 30px system-ui'; x.fillStyle='#fff'; x.fillText(vertical?'ENQUIRE FOR DETAILS':'Message us for details',96,H-80,900);
   };
-  if (AD.photoData) { const img=new Image(); img.onload=()=>{ if (!c.isConnected) return; const s=Math.max(iw/img.width,ih/img.height),dw=img.width*s,dh=img.height*s; x.save(); x.beginPath(); x.roundRect(ix,iy,iw,ih,28); x.clip(); x.drawImage(img,ix+(iw-dw)/2,iy+(ih-dh)/2,dw,dh); x.restore(); finish(); }; img.src=AD.photoData; } else finish();
+  if (AD.photoData) { const img=new Image(); img.onload=()=>{ if (!c.isConnected) return; drawPhotoPlateSafe(x,img,ix,iy,iw,ih,28); finish(); }; img.src=AD.photoData; } else finish();
 }
 function vehicleAdBlob() { return new Promise((ok,no)=>{const c=$('ad_canvas'); if(!c)return no(Error('Ad preview is closed')); c.toBlob(b=>b?ok(b):no(Error('Could not create image')),'image/jpeg',.94);}); }
 async function downloadVehicleAd() { try { const b=await vehicleAdBlob(),a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download=`${AD.vehicle.make||'vehicle'}-${AD.vehicle.model||''}-${AD.vehicle.year||''}-ad.jpg`.replace(/[^a-z0-9.-]+/gi,'-'); a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),1200); } catch(e){toast(e.message,true);} }
-async function shareVehicleAd() { try { const b=await vehicleAdBlob(),f=new File([b],'vehiclehub-ad.jpg',{type:'image/jpeg'}); if(navigator.canShare&&navigator.canShare({files:[f]})) await navigator.share({files:[f],title:carName(AD.vehicle)}); else await downloadVehicleAd(); } catch(e){if(e.name!=='AbortError')toast(e.message,true);} }
-function copyVehicleCaption() { const v=AD.vehicle,t=`${carName(v)}\n${lk(v.price)}\n${[v.vehicle_type,v.condition,v.color,v.fuel,v.transmission,v.district].filter(Boolean).join(' · ')}\nMessage us for details`; (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>toast('Caption copied'),()=>prompt('Copy caption:',t)); }
+function vehicleAdRequestLink() {
+  const v = AD.vehicle, u = new URL(S.formUrl || 'https://drcjayawardena.github.io/VehicleHUB/request.html');
+  u.searchParams.set('type', 'buyer'); u.searchParams.set('src', 'vehicle-ad');
+  u.searchParams.set('ref', S.user && S.user.username || '');
+  if (v.make) u.searchParams.set('make', v.make);
+  if (v.model) u.searchParams.set('model', v.model);
+  if (v.vehicle_type) u.searchParams.set('vtype', v.vehicle_type);
+  if (v.year) u.searchParams.set('year', v.year);
+  if (v.price) u.searchParams.set('price', v.price);
+  return u.href;
+}
+function vehicleAdCaption() {
+  const v=AD.vehicle;
+  return `${carName(v)}\n${lk(v.price)}\n${[v.vehicle_type,v.condition,v.color,v.fuel,v.transmission,v.district].filter(Boolean).join(' · ')}\nවාහනය ගැන විමසීමට / Request this vehicle:\n${vehicleAdRequestLink()}`;
+}
+async function shareVehicleAd() { try { const b=await vehicleAdBlob(),f=new File([b],'vehiclehub-ad.jpg',{type:'image/jpeg'}); if(navigator.canShare&&navigator.canShare({files:[f]})) await navigator.share({files:[f],title:carName(AD.vehicle),text:vehicleAdCaption()}); else await downloadVehicleAd(); } catch(e){if(e.name!=='AbortError')toast(e.message,true);} }
+function copyVehicleCaption() { const t=vehicleAdCaption(); (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>toast('Caption and officer request link copied'),()=>prompt('Copy caption and officer request link:',t)); }
 async function galDelete(btn) {
   const p = G.photos[G.i];
   if (!p || !confirm('Delete this photo?')) return;
