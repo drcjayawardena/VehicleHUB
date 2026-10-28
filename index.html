@@ -193,6 +193,13 @@
     .tile { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; cursor: pointer; }
     .tile b { display: block; font-size: 26px; line-height: 1.1; }
     .tile span { font-size: 13px; color: var(--muted); }
+    .dtabs { display: flex; gap: 6px; flex-wrap: wrap; margin: 20px 0 12px; }
+    .dtabs button { border: 1px solid var(--line); background: var(--card); color: var(--text); border-radius: 999px;
+      padding: 7px 14px; font-size: 14px; cursor: pointer; }
+    .dtabs button b { font-weight: 600; margin-left: 6px; color: var(--muted); }
+    .dtabs button.on { background: var(--primary); border-color: var(--primary); color: #fff; }
+    .dtabs button.on b { color: #fff; }
+    .dmore { margin-top: 10px; font-size: 14px; }
 
     /* ---------- Record cards ---------- */
     .rec { display: flex; flex-direction: column; gap: 6px; }
@@ -208,8 +215,6 @@
     .rec .focus-meta { color: var(--muted); font-size: 13px; margin-top: 3px; }
     .rec .focus-budget { background: #f2f6fc; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 8px 10px; }
     .rec .person-meta { color: var(--muted); font-size: 13px; }
-
-
 
     /* ---------- Match cards ---------- */
     .match { display: flex; flex-direction: column; gap: 10px; }
@@ -288,7 +293,8 @@
       .grid, .grid.wide { grid-template-columns: 1fr; }
       .who .uname { display: none; }
     }
-    /* Hide standalone navigation only while this page is embedded in MasterCAL. */
+    /* MasterCAL embeds one VehicleHUB section at a time; keep the standalone
+       navigation on VehicleHUB itself, and let the parent tabs provide navigation. */
     html.mastercal-embed header { display: none !important; }
     html.mastercal-embed main { margin: 0 !important; max-width: none !important; padding: 12px !important; }
     html.mastercal-embed main > * { max-width: none !important; }
@@ -322,7 +328,7 @@
 
   <script src="config.js"></script>
   <script src="plate.js"></script>
-  <script src="years.js"></script>
+<script src="years.js"></script>
   <script>
     /* ============================================================
      *  WEBSITE MODE (GitHub Pages)
@@ -1011,9 +1017,8 @@ function applyInit(r) {
   try { localStorage.setItem('vehiclehub_username', S.user.username || ''); } catch (e) {}   // MasterCAL quotations link customers to this officer
   renderShell();
   checkVersions(r.versions);
-  const initialView = EMBED_MODE && EMBED_VIEWS.has(EMBED_INITIAL_VIEW) ? EMBED_INITIAL_VIEW : 'vehicles';
-  go(EMBED_MODE ? initialView : 'dashboard');
-  if (EMBED_MODE) window.parent.postMessage({ type: 'vehiclehub:ready', view: initialView }, location.origin);
+  go(EMBED_MODE ? (EMBED_VIEWS.has(EMBED_INITIAL_VIEW) ? EMBED_INITIAL_VIEW : 'vehicles') : 'dashboard');
+  if (EMBED_MODE && window.parent !== window) window.parent.postMessage({ type: 'vehiclehub:ready', view: S.view }, location.origin);
 }
 
 /** Warns clearly when the three files are from different updates. */
@@ -1146,7 +1151,7 @@ function renderShell() {
     <header>
       <div class="hbar">
         <div class="brand"><img class="brand-logo" src="${logoSrc('vmLogoRound')}" alt=""><span>Vehicle<b>Hub</b></span></div>
-        <div class="who"><span class="uname">${ic('user')} <span id="unameText">${esc(S.user.full_name)}</span></span><button onclick="logout()">${ic('logout')} Logout</button></div>
+        <div class="who"><span class="uname">${ic('user')} <span id="unameText">${esc(S.user.full_name)}</span> <span class="badge">${esc(S.user.user_type || 'Officer')}</span></span><button onclick="logout()">${ic('logout')} Logout</button></div>
       </div>
       <nav id="nav">${TABS.filter(t => EMBED_MODE ? ['vehicles', 'buyers', 'matches'].includes(t[0]) : (!t[3] || S.user.role === 'admin')).map(t =>
         `<button data-v="${t[0]}" onclick="go('${t[0]}')">${ic(t[1])}<span>${t[2]}</span><em class="navcount" id="nc_${t[0]}"></em></button>`).join('')}
@@ -1197,8 +1202,52 @@ async function viewDashboard() {
     <div class="row" style="margin-top:14px">
       <button class="btn primary big" onclick="go('newcall')">${ic('phone')} Add a new call</button>
     </div>
-    <h2>${ic('star', 'h')} Top new matches</h2>
-    <div class="grid">${d.topNew.map(matchCard).join('') || '<div class="empty">No new matches</div>'}</div>`);
+    <div class="dtabs" id="dash_tabs" role="tablist"></div>
+    <div id="dash_body" class="grid"></div>
+    <div id="dash_more" class="dmore"></div>`);
+  S.dash = d;
+  if (Array.isArray(d.recentVehicles)) {          /* so Edit / Matches buttons on the cards work */
+    d.recentVehicles.concat(d.attention.vehicleList).forEach(v => S.rec[v.vehicle_id] = v);
+    d.recentBuyers.concat(d.attention.buyerList).forEach(b => S.rec[b.buyer_id] = b);
+  }
+  drawDashboard();
+}
+
+/** Dashboard tabs: New matches | Available vehicles | Active buyers | Needs attention.
+ *  The last tab opened is kept while the page stays open (S.dashTab). */
+function drawDashboard() {
+  const d = S.dash, s = d.stats, a = d.attention || {};
+  const lists = Array.isArray(d.recentVehicles);            /* an older backend sends the matches only */
+  const tabs = [['matches', 'New matches', s.newMatches]];
+  if (lists) tabs.push(['vehicles', 'Available vehicles', s.availableVehicles], ['buyers', 'Active buyers', s.activeBuyers],
+    ['attention', 'Needs attention', a.vehicles + a.buyers]);
+  if (!tabs.some(t => t[0] === S.dashTab)) S.dashTab = 'matches';
+  const cur = S.dashTab;
+  $('dash_tabs').innerHTML = tabs.map(t => `<button type="button" role="tab" class="${t[0] === cur ? 'on' : ''}"
+    aria-selected="${t[0] === cur}" onclick="S.dashTab='${t[0]}';drawDashboard()">${t[1]}<b>${t[2]}</b></button>`).join('');
+
+  const empty = msg => `<div class="empty">${msg}</div>`;
+  const seeAll = (view, text) => `<a href="#" onclick="go('${view}');return false">${text} ${ic('right')}</a>`;
+  let body = '', more = '';
+  if (cur === 'matches') {
+    body = d.topNew.map(matchCard).join('') || empty('No new matches');
+    more = d.topNew.length ? seeAll('matches', 'See all matches') : '';
+  } else if (cur === 'vehicles') {
+    body = d.recentVehicles.map(vehicleCard).join('') || empty('No available vehicles yet.');
+    more = seeAll('vehicles', 'See all vehicles');
+  } else if (cur === 'buyers') {
+    body = d.recentBuyers.map(buyerCard).join('') || empty('No active buyers yet.');
+    more = seeAll('buyers', 'See all buyers');
+  } else {
+    const part = (title, n, list, card, view) => !n ? '' :
+      `<h2 style="grid-column:1/-1;margin:6px 0 0">${ic('alert', 'h')} ${title} (${n})</h2>${list.map(card).join('')}` +
+      (n > list.length ? `<div class="dmore" style="grid-column:1/-1">${n - list.length} more. ${seeAll(view, 'See all ' + view)}</div>` : '');
+    body = part('Vehicles with no match yet', a.vehicles, a.vehicleList, vehicleCard, 'vehicles') +
+           part('Buyers with no match yet', a.buyers, a.buyerList, buyerCard, 'buyers') ||
+           empty('Nothing needs attention. Every vehicle and buyer has a match.');
+  }
+  $('dash_body').innerHTML = body;
+  $('dash_more').innerHTML = more;
 }
 
 /* ============================================================
@@ -1919,8 +1968,7 @@ async function viewMatches() {
       <input id="m_q" placeholder="Search name, phone, model or ID" oninput="renderMatches()">
       <select id="m_st" onchange="renderMatches()">${opts(S.lists.MATCH_STATUS, p.deals ? dealStatus() : '', 'All statuses')}</select>
       <select id="m_min" onchange="renderMatches()">
-        <option value="0">Any score</option><option value="50" selected>50+</option>
-        <option value="70">70+</option><option value="85">85+</option></select>
+        <option value="80" selected>80+</option><option value="90">90+</option></select>
       <label class="check"><input type="checkbox" id="m_closed" onchange="loadMatches()" ${p.deals ? 'checked' : ''}> Show closed deals &amp; rejected</label>
       <button class="btn" onclick="refreshAll(this)">${ic('refresh')} Re-match all</button>
     </div>
