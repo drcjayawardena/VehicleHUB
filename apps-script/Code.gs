@@ -1751,31 +1751,55 @@ function confirmLeadToCustomer_(l, officer) {
 }
 
 /**
- * Optional automatic WhatsApp confirmation through the Meta WhatsApp Cloud API.
- * Works only when these Script properties are set (Project Settings → Script properties):
- *   WA_TOKEN, WA_PHONE_ID, WA_LEAD_TEMPLATE (an approved template with 3 body variables:
- *   {{1}} customer name, {{2}} reference number, {{3}} agent name), WA_LANG (default en_US).
- * Without them nothing is sent — the customer still gets the WhatsApp button on the thank-you page.
+ * Optional automatic WhatsApp confirmation to the CUSTOMER through the Meta WhatsApp Cloud API.
+ * Uses its OWN template — not WA_LEAD_TEMPLATE, which is the officer's "new_lead" alert
+ * (4 variables) sent by WhatsApp.gs. Script properties (Project Settings → Script properties):
+ *   WA_TOKEN, WA_PHONE_ID          (shared with WhatsApp.gs)
+ *   WA_CUSTOMER_TEMPLATE           approved template with 3 body variables:
+ *                                  {{1}} customer name, {{2}} reference number, {{3}} agent name
+ *   WA_CUSTOMER_LANG               template language code (default: WA_LANG, then "en")
+ *   WA_ENABLED = false             stops this message too
+ * Without WA_CUSTOMER_TEMPLATE nothing is sent — the customer still gets the WhatsApp button
+ * on the thank-you page. Every attempt is written to WA_LOG as "cust:<lead_id>".
  */
 function sendLeadWhatsApp_(l, agentName) {
+  const phone = normPhone_(l.phone);
   try {
     const pr = PropertiesService.getScriptProperties();
-    const token = pr.getProperty('WA_TOKEN'), phoneId = pr.getProperty('WA_PHONE_ID'), tmpl = pr.getProperty('WA_LEAD_TEMPLATE');
+    const token = pr.getProperty('WA_TOKEN'), phoneId = pr.getProperty('WA_PHONE_ID');
+    const tmpl = pr.getProperty('WA_CUSTOMER_TEMPLATE');
     if (!token || !phoneId || !tmpl) return false;
-    const to = '94' + String(l.phone).replace(/^0/, '');
+    if (String(pr.getProperty('WA_ENABLED') || 'true').toLowerCase() === 'false') return false;
+    const lang = pr.getProperty('WA_CUSTOMER_LANG') || pr.getProperty('WA_LANG') || 'en';
+    const to = phone.length === 10 && phone.charAt(0) === '0' ? '94' + phone.slice(1) : phone;
+    const text = function (s) { return String(s == null ? '' : s).replace(/[\n\t]+/g, ' ').replace(/ {4,}/g, ' ').trim() || '-'; };
     const res = UrlFetchApp.fetch('https:/' + '/graph.facebook.com/v21.0/' + phoneId + '/messages', {
       method: 'post', contentType: 'application/json', muteHttpExceptions: true,
       headers: { Authorization: 'Bearer ' + token },
       payload: JSON.stringify({
         messaging_product: 'whatsapp', to: to, type: 'template',
-        template: { name: tmpl, language: { code: pr.getProperty('WA_LANG') || 'en_US' },
+        template: { name: tmpl, language: { code: lang },
           components: [{ type: 'body', parameters: [
-            { type: 'text', text: String(l.name) }, { type: 'text', text: String(l.lead_id) }, { type: 'text', text: String(agentName) }] }] }
+            { type: 'text', text: text(l.name) }, { type: 'text', text: text(l.lead_id) }, { type: 'text', text: text(agentName) }] }] }
       })
     });
-    if (res.getResponseCode() >= 300) Logger.log('WA lead send failed: ' + res.getContentText());
-    return res.getResponseCode() < 300;
-  } catch (e) { Logger.log('sendLeadWhatsApp_: ' + e.message); return false; }
+    const code = res.getResponseCode(), ok = code >= 200 && code < 300;
+    if (!ok) Logger.log('WA customer send failed: ' + res.getContentText());
+    waLogCustomer_(l, phone, ok ? 'sent' : 'failed', code + ' ' + res.getContentText().slice(0, 300));
+    return ok;
+  } catch (e) {
+    Logger.log('sendLeadWhatsApp_: ' + e.message);
+    waLogCustomer_(l, phone, 'failed', e.message);
+    return false;
+  }
+}
+
+/** Customer confirmations go into WA_LOG too, so failures are visible. Never throws. */
+function waLogCustomer_(l, phone, status, detail) {
+  try {
+    if (typeof waLogSheet_ !== 'function') return;   // WhatsApp.gs not in the project
+    waLogSheet_().appendRow([new Date(), 'cust:' + l.lead_id, 'customer', phone, status, String(detail || '')]);
+  } catch (e) { Logger.log('waLogCustomer_: ' + e.message); }
 }
 
 // ---------- Officers: leads inside the app ----------
