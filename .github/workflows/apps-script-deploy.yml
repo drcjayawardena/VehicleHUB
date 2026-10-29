@@ -1,4 +1,4 @@
-# Deploys the apps-script/ folder to the live Apps Script web app whenever a change
+# Deploys the BackEND/ folder to the live Apps Script web app whenever a change
 # to that folder reaches the main branch (e.g. a merged pull request).
 # The existing deployment is updated, so the /exec URL in config.js stays the same.
 name: Apps Script — deploy
@@ -7,7 +7,7 @@ on:
   push:
     branches: [main]
     paths:
-      - 'apps-script/**'
+      - 'BackEND/**'
   workflow_dispatch:
 
 permissions:
@@ -30,7 +30,7 @@ jobs:
       # Safety: "clasp push" replaces EVERY file in the Apps Script project.
       # If the folder is incomplete it would delete the live code, so stop instead.
       - name: Check that the code is complete
-        working-directory: apps-script
+        working-directory: BackEND
         run: |
           missing=0
           for f in appsscript.json Code.gs Matching.gs McLogin.gs WhatsApp.gs Index.html; do
@@ -56,11 +56,11 @@ jobs:
           printf '%s' "$CLASPRC_JSON" > ~/.clasprc.json
 
       - name: Upload the code to Apps Script
-        working-directory: apps-script
+        working-directory: BackEND
         run: clasp push --force
 
       - name: Publish a new version of the web app (same URL)
-        working-directory: apps-script
+        working-directory: BackEND
         run: clasp deploy --deploymentId "$DEPLOYMENT_ID" --description "GitHub ${GITHUB_SHA::7} — $(git log -1 --pretty=%s | cut -c1-80)"
 
       - name: Check the live server

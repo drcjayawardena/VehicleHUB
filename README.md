@@ -1,50 +1,67 @@
-# VehicleHub — Website (GitHub Pages)
+# VehicleHUB
 
-This folder is the public website. Data still lives in your Google Sheet; the website talks to your Apps Script project as an API.
+Vehicle buyer / seller matching app for Sri Lanka (app version 3.6).
+Data lives in a Google Sheet, the backend is Google Apps Script, the website is GitHub Pages.
 
-## Files
+## 📁 Folders
+| Folder | What it is | Deploys to |
+|---|---|---|
+| `BackEND/` | Google Apps Script code — `Code.gs`, `Matching.gs`, `McLogin.gs`, `WhatsApp.gs`, `Index.html`, `appsscript.json`, `.clasp.json` | Apps Script web app (workflow **Apps Script — deploy**) |
+| `FrontEND/` | Website — `index.html` (app), `request.html`, `vehicles.html`, `config.js` (/exec URL), `plate.js`, `years.js`, `sw.js`, icons | GitHub Pages (workflow **Website — deploy**) |
+| `.github/workflows/` | Automatic deploy / pull workflows | — |
+| `CLAUDE.md` | Project notes for Claude Code | — |
 
-| File | Purpose |
+## 🚀 How deploy works
+1. Change files in this folder (`C:\Users\Pentium\Documents\Project\VehicleHUB`).
+2. Commit and push to `main`.
+3. GitHub Actions does the rest:
+   - `BackEND/` changed → `clasp push` + `clasp deploy` to the same deployment (the /exec URL never changes).
+   - `FrontEND/` changed → the website is published to GitHub Pages.
+4. Check: https://github.com/drcjayawardena/VehicleHUB/actions
+
+⚠️ Apps Script editor එකේ code වෙනස් කළොත් → Actions → **"Apps Script — pull live code"** → Run workflow → ඊට පස්සේ මෙතන `git pull`.
+නැත්නම් ඊළඟ deploy එකෙන් editor එකේ වෙනස්කම් මැකෙනවා.
+
+## 🌐 App
+| What | Link |
 |---|---|
-| `index.html` | The whole app (same file as `Index.html` in Apps Script) |
-| `manifest.webmanifest`, `icon-192.png`, `icon-512.png` | Lets phones "Add to Home screen" like an app |
-| `sw.js` | Keeps a copy of the page so it opens quickly; always loads the newest version when online |
+| Main app (Officers / Admin login) | https://drcjayawardena.github.io/VehicleHUB/ |
+| Customer request page | https://drcjayawardena.github.io/VehicleHUB/request.html |
+| Public vehicles / showroom | https://drcjayawardena.github.io/VehicleHUB/vehicles.html |
 
-## 1. Prepare Apps Script (once)
+## 📊 Google Sheet (Database)
+| What | Link |
+|---|---|
+| VehicleHub DB | https://docs.google.com/spreadsheets/d/1M_eemNHd78aDl0S6TdQdzf77lDdEpoqBZhiRY3BolI0/edit |
 
-1. Paste the latest `Code.gs`, `Matching.gs` and `Index.html` into your Apps Script project and Save.
-2. **Deploy → Manage deployments → ✏️ Edit**
-   - Execute as: **Me**
-   - Who has access: **Anyone** ← required, otherwise the website cannot connect
-   - Version: **New version** → **Deploy**
-3. Copy the **Web app URL** (it ends with `/exec`).
-   Test it: open `<your URL>?ping=1` — you should see `{"ok":true,"app":"VehicleHub"}`.
+Sheets: `USERS`, `LEADS`, `VEHICLE_MASTER`, `DROPDOWN_LISTS`, `WA_LOG` …
+⚠️ Sheet එකේ customer data තියෙනවා — access දෙන්න ඕන අයට විතරයි.
 
-## 2. Put the URL into index.html
+## ⚙️ Apps Script (Backend)
+| What | Link |
+|---|---|
+| Editor | https://script.google.com/home/projects/1SoG9hIml7sLsYZvprgl_qbkJplVzWbDjmkokt4ctbdcZDGC9Zb_h7N-B/edit |
+| Project Settings (Script properties) | https://script.google.com/home/projects/1SoG9hIml7sLsYZvprgl_qbkJplVzWbDjmkokt4ctbdcZDGC9Zb_h7N-B/settings |
+| Web app API (/exec) | https://script.google.com/macros/s/AKfycbzbWYCtLp5F8ZSeNa-BH5CI8ZOtBo90mLSp3yHWgHKxBBZVHKseZMiaPEbFoOrv6_Um/exec |
+| Health check | https://script.google.com/macros/s/AKfycbzbWYCtLp5F8ZSeNa-BH5CI8ZOtBo90mLSp3yHWgHKxBBZVHKseZMiaPEbFoOrv6_Um/exec?ping=1 |
+| MasterCAL login API (used by `McLogin.gs`) | https://script.google.com/macros/s/AKfycbx8m_v6iMUy8tTSGzxSfxi79ZyTfJgpy89WjVkqRMO3dvnm734znkdTvjpW92DhO-xN/exec |
 
-Open `index.html`, find this line near the top and paste your URL between the quotes:
+🔒 Script Properties page එකේ `WA_TOKEN` පේනවා — screenshot ගන්න එපා.
 
-```js
-window.VM_API_URL = 'PASTE_YOUR_WEB_APP_URL_HERE';
-```
+## 🐙 GitHub
+| What | Link |
+|---|---|
+| Repository | https://github.com/drcjayawardena/VehicleHUB |
+| Actions | https://github.com/drcjayawardena/VehicleHUB/actions |
+| Secrets (`CLASPRC_JSON`) | https://github.com/drcjayawardena/VehicleHUB/settings/secrets/actions |
+| Pages settings (Source: GitHub Actions) | https://github.com/drcjayawardena/VehicleHUB/settings/pages |
 
-## 3. Publish on GitHub Pages
+## 💬 WhatsApp (Meta)
+| What | Link |
+|---|---|
+| Message templates (VehicleHUB Sri Lanka) | https://business.facebook.com/latest/whatsapp_manager/message_templates/?business_id=1319557227910659 |
 
-1. Create a GitHub account → **New repository** (e.g. `vehicle-match`), **Public**.
-2. **Add file → Upload files** → upload the 5 files listed above (README is optional) → **Commit changes**.
-3. Repository **Settings → Pages** → Source: **Deploy from a branch** → Branch: **main** / **(root)** → **Save**.
-4. After 1–2 minutes your site is live at `https://<your-username>.github.io/vehicle-match/`.
-
-## Updating later
-
-- Changed `index.html`? Upload the new file to the repository again (same name) → Commit. The site updates in a minute or two.
-- Changed `Code.gs` / `Matching.gs`? **Deploy → Manage deployments → Edit → New version** (the URL stays the same, so the website needs no change).
-
-## Own domain (optional)
-
-Buy a domain (e.g. `vehiclematch.lk` or `.com`), then in **Settings → Pages → Custom domain** enter it and follow GitHub's DNS instructions (a CNAME record pointing to `<your-username>.github.io`). Tick **Enforce HTTPS**.
+Templates: `new_lead` (officer alert), `vehicle_match`, `user_approved`, `lead_received` (customer confirmation).
 
 ## Notes
-
-- The repository is public, but it contains **no data and no passwords** — only the page. All data stays in your Google Sheet and Drive, protected by the app login.
-- The old `script.google.com` link keeps working too.
+- The repository is public but holds **no data and no passwords** — only code. All data stays in the Google Sheet and Drive.

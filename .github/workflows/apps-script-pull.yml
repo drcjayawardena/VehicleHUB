@@ -1,5 +1,5 @@
 # Copies the live Apps Script code (Code.gs, Matching.gs, McLogin.gs, WhatsApp.gs,
-# Index.html, appsscript.json) into the apps-script/ folder of this repository.
+# Index.html, appsscript.json) into the BackEND/ folder of this repository.
 # Run it by hand: Actions → "Apps Script — pull live code" → Run workflow.
 # Use it once at the start, and again whenever someone edits code in the Apps Script editor.
 name: Apps Script — pull live code
@@ -35,14 +35,14 @@ jobs:
           printf '%s' "$CLASPRC_JSON" > ~/.clasprc.json
 
       - name: Pull the live code
-        working-directory: apps-script
+        working-directory: BackEND
         run: clasp pull
 
       - name: Commit if anything changed
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add apps-script
+          git add BackEND
           if git diff --cached --quiet; then
             echo "Already up to date — nothing to commit."
           else
