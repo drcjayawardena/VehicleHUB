@@ -2038,7 +2038,7 @@ function viewSettings() {
         <p class="muted">Edit a user's name, mobile number, role or status. Type a new password only if you want to reset it.</p>
         <div class="uwrap" id="usersBox"><div class="loading">Loading…</div></div>
       </div>` : ''}
-      <div class="card" style="margin-top:14px">
+      ${S.user.role === 'admin' ? `<div class="card" style="margin-top:14px">
         <h2 style="margin-top:0">${ic('car', 'h')} Add vehicle makes & models</h2>
         <p class="muted">New makes/models typed in a vehicle form are also added automatically when you save.</p>
         <form class="form" onsubmit="addMaster(event)">
@@ -2048,7 +2048,7 @@ function viewSettings() {
             <input id="mm_models" placeholder="e.g. Aqua, Axio, Vitz"></label>
           <div class="full"><button class="btn primary">Add to list</button></div>
         </form>
-      </div>
+      </div>` : ''}
       <div class="card" style="margin-top:14px">
         <h2 style="margin-top:0">${ic('info', 'h')} Editing dropdowns</h2>
         <p class="muted">Lists such as District, Fuel and Status are in the <b>DROPDOWN_LISTS</b> sheet of the Google Sheet.

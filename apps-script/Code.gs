@@ -20,6 +20,9 @@ const APP = {
   VERSION: '3.6',   // must match MATCH_CONFIG.VERSION in Matching.gs and APP_VERSION in Index.html
   TZ: 'Asia/Colombo',
   SESSION_SECONDS: 6 * 60 * 60, // 6 hours (CacheService maximum)
+  // Login lockout: after this many wrong passwords for one account, it is locked for LOCK_MINUTES.
+  MAX_LOGIN_FAILS: 5,
+  LOCK_MINUTES: 15,
   // Privacy: in matches, customers of OTHER officers are hidden — only the officer's
   // name, phone and the vehicle details are shown. Set true to let admins see everyone.
   ADMIN_SEES_ALL_CUSTOMERS: false,
@@ -348,10 +351,20 @@ function login(username, password) {
   const u = users.find(function (x) { return String(x.username).trim().toLowerCase() === loginName; }) ||
     (normPhone_(loginName).length === 10 ? users.find(function (x) { return normPhone_(x.phone) === normPhone_(loginName); }) : null);
   const storedUsername = u ? String(u.username).trim().toLowerCase() : loginName;
+  // One counter per account, whether the login name was the username or the phone number.
+  const cache = CacheService.getScriptCache();
+  const failKey = 'LF_' + (normPhone_(storedUsername).length === 10 ? normPhone_(storedUsername) : storedUsername);
+  const fails = Number(cache.get(failKey) || 0);
+  if (fails >= APP.MAX_LOGIN_FAILS) {
+    Utilities.sleep(800);
+    throw new Error('Too many wrong passwords. Please try again in ' + APP.LOCK_MINUTES + ' minutes.');
+  }
   if (!u || String(u.password_hash) !== hash_(storedUsername, String(password || ''))) {
+    cache.put(failKey, String(fails + 1), APP.LOCK_MINUTES * 60);
     Utilities.sleep(800);
     throw new Error('Incorrect username or password');
   }
+  cache.remove(failKey);
   if (!isTrue_(u.active)) {
     throw new Error(u.approved_at ? 'This account has been deactivated. Please contact the admin.'
                                   : 'Your account is waiting for admin approval.');
@@ -956,7 +969,8 @@ function masterList_() {
 }
 
 /** Settings → add a make and one or more models (comma / new-line separated). */
-function addMaster_(p) {
+function addMaster_(p, user) {
+  if (!isAdmin_(user)) throw new Error('Only admins can add makes and models');
   const type = str_(p.vehicle_type), make = str_(p.make);
   if (!type || !make) throw new Error('Please choose a vehicle type and enter the make');
   const models = String(p.models || '').split(/[,\n]+/).map(str_).filter(Boolean);
