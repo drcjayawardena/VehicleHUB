@@ -6,6 +6,7 @@
 
 ## Architecture
 - **Data**: Google Sheets (LEADS, WA_LOG, users, vehicles …). No data or passwords live in this repo.
+  Sheet "VehicleHub DB" (the Apps Script is bound to it): https://docs.google.com/spreadsheets/d/1M_eemNHd78aDl0S6TdQdzf77lDdEpoqBZhiRY3BolI0/edit
 - **Backend**: Google Apps Script web app — code in `apps-script/`
   (`Code.gs`, `Matching.gs`, `McLogin.gs`, `WhatsApp.gs`, `Index.html`, `appsscript.json`).
   Script ID: `1SoG9hIml7sLsYZvprgl_qbkJplVzWbDjmkokt4ctbdcZDGC9Zb_h7N-B` (see `apps-script/.clasp.json`).
