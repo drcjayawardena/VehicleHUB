@@ -27,7 +27,6 @@
  *   WA_ENABLED    true                                  (set false to stop all messages)
  *
  * First time: select setupWhatsApp in the editor and click ▶ Run.
- * Test:       put your number in testWhatsApp() and run it.
  ******************************************************/
 
 const WA = {
@@ -223,16 +222,4 @@ function waSendTemplate_(phone, params, template) {
   } catch (e) {
     return { ok: false, detail: e.message };
   }
-}
-
-/** Editor test for the new_lead template: put your own mobile number below and click ▶ Run. */
-function testLeadWhatsApp() {
-  const r = waSendTemplate_('0779100518', ['L0001', 'Kamal', '0771234567', 'Wants to buy Car Toyota Aqua, budget up to Rs. 65 Lakhs'], waProp_('WA_LEAD_TEMPLATE', 'new_lead'));
-  Logger.log(JSON.stringify(r));
-}
-
-/** Editor test: put your own mobile number below and click ▶ Run. Check View → Logs. */
-function testWhatsApp() {
-  const r = waSendTemplate_('0771234567', ['Toyota Aqua 2015 - Rs. 65 Lakhs', 'Kamal', 'Test Officer 0771234567']);
-  Logger.log(JSON.stringify(r));
 }
