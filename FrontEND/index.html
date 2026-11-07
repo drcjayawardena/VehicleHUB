@@ -1732,22 +1732,74 @@ function renderRecordMatches(list, title) {
 /* ============================================================
  *  BUYERS LIST
  * ============================================================ */
+function browseRows(kind) { return kind === 'buyers' ? S.buyers : S.vehicles; }
+function browseSource(kind) {
+  return [...(S.master || []), ...browseRows(kind)];
+}
+function browseMakes(kind) {
+  const type = $('f_ty').value;
+  return uniq(browseSource(kind).filter(r => (!type || norm(r.vehicle_type) === norm(type))).map(r => r.make));
+}
+function browseModels(kind) {
+  const type = $('f_ty').value, make = $('f_make').value;
+  return uniq(browseSource(kind).filter(r => (!type || norm(r.vehicle_type) === norm(type)) &&
+    (!make || norm(r.make) === norm(make))).map(r => r.model));
+}
+function browseYears(kind) {
+  const type = $('f_ty').value, make = $('f_make').value, model = $('f_model').value;
+  const known = yearsFor(make, model);
+  const actual = browseSource(kind).filter(r => (!type || norm(r.vehicle_type) === norm(type)) &&
+    (!make || norm(r.make) === norm(make)) && (!model || norm(r.model) === norm(model)))
+    .flatMap(r => kind === 'buyers' ? [r.year_from, r.year_to] : [r.year])
+    .filter(Boolean).map(String);
+  return uniq([...known, ...actual]).sort((a, b) => Number(b) - Number(a));
+}
+function fillBrowseSelect(id, items, blank) {
+  const el = $(id), current = el.value;
+  el.innerHTML = opts(items, '', blank);
+  if (items.includes(current)) el.value = current;
+  el.disabled = !items.length;
+}
+function browseTypeChanged(kind) {
+  fillBrowseSelect('f_make', browseMakes(kind), 'All makes');
+  browseMakeChanged(kind);
+}
+function browseMakeChanged(kind) {
+  fillBrowseSelect('f_model', browseModels(kind), 'All models');
+  browseModelChanged(kind);
+}
+function browseModelChanged(kind) {
+  fillBrowseSelect('f_year', browseYears(kind), 'All years');
+  (kind === 'buyers' ? renderBuyers : renderVehicles)();
+}
+function browseVehicleFilters(kind) {
+  return `<select id="f_ty" onchange="browseTypeChanged('${kind}')">${opts(S.lists.VEHICLE_TYPE, '', 'All vehicle types')}</select>
+    <select id="f_make" onchange="browseMakeChanged('${kind}')"><option value="">All makes</option></select>
+    <select id="f_model" onchange="browseModelChanged('${kind}')"><option value="">All models</option></select>
+    <select id="f_year" onchange="${kind === 'buyers' ? 'renderBuyers' : 'renderVehicles'}()"><option value="">All years</option></select>`;
+}
+
 async function viewBuyers() {
   setMain(`
     <div class="toolbar">
       <input id="f_q" placeholder="Search name, phone, model or ID" oninput="renderBuyers()">
       <select id="f_st" onchange="renderBuyers()">${opts(S.lists.BUYER_STATUS, 'Active', 'All statuses')}</select>
+      ${browseVehicleFilters('buyers')}
       <button class="btn primary" onclick="go('buyerForm',{})">+ Buyer</button>
     </div>
     <div id="list" class="grid">${skeleton(4)}</div>`);
   const r = await call('listBuyers');
   if (!r || S.view !== 'buyers') return;
   S.buyers = r.buyers; r.buyers.forEach(b => S.rec[b.buyer_id] = b);
+  browseTypeChanged('buyers');
   renderBuyers();
 }
 function renderBuyers() {
-  const q = norm($('f_q').value), st = $('f_st').value;
+  const q = norm($('f_q').value), st = $('f_st').value, ty = $('f_ty').value;
+  const make = norm($('f_make').value), model = norm($('f_model').value), year = Number($('f_year').value);
   const list = S.buyers.filter(b => (!st || b.status === st) &&
+    (!ty || norm(b.vehicle_type) === norm(ty)) && (!make || norm(b.make) === make) && (!model || norm(b.model) === model) &&
+    (!year || ((!b.year_from || Number(b.year_from) <= year) && (!b.year_to || Number(b.year_to) >= year))) &&
     (!q || norm([b.buyer_id, b.name, b.phone, b.phone2, b.make, b.model, b.district].join(' ')).includes(q)));
   $('list').innerHTML = list.map(buyerCard).join('') || '<div class="empty">No buyers</div>';
 }
@@ -1788,18 +1840,21 @@ async function viewVehicles() {
     <div class="toolbar">
       <input id="f_q" placeholder="Search name, phone, make, model or ID" oninput="renderVehicles()">
       <select id="f_st" onchange="renderVehicles()">${opts(S.lists.VEHICLE_STATUS, 'Available', 'All statuses')}</select>
-      <select id="f_ty" onchange="renderVehicles()">${opts(S.lists.VEHICLE_TYPE, '', 'All types')}</select>
+      ${browseVehicleFilters('vehicles')}
       <button class="btn primary" onclick="go('vehicleForm',{})">+ Vehicle</button>
     </div>
     <div id="list" class="grid">${skeleton(4)}</div>`);
   const r = await call('listVehicles');
   if (!r || S.view !== 'vehicles') return;
   S.vehicles = r.vehicles; r.vehicles.forEach(v => S.rec[v.vehicle_id] = v);
+  browseTypeChanged('vehicles');
   renderVehicles();
 }
 function renderVehicles() {
   const q = norm($('f_q').value), st = $('f_st').value, ty = $('f_ty').value;
+  const make = norm($('f_make').value), model = norm($('f_model').value), year = $('f_year').value;
   const list = S.vehicles.filter(v => (!st || v.status === st) && (!ty || v.vehicle_type === ty) &&
+    (!make || norm(v.make) === make) && (!model || norm(v.model) === model) && (!year || String(v.year) === year) &&
     (!q || norm([v.vehicle_id, v.owner_name, v.owner_phone, v.phone2, v.make, v.model, v.district].join(' ')).includes(q)));
   $('list').innerHTML = list.map(vehicleCard).join('') || '<div class="empty">No vehicles</div>';
 }
