@@ -10,8 +10,9 @@
  *    Index.html   ← the complete UI
  *
  *  First time: select the `setup` function in the editor and click ▶ Run.
- *  The first admin (FIRST_ADMIN below) is created with a random temporary password,
- *  shown in the Execution log. Log in and change it right away (Settings → Change password).
+ *  The first admin (FIRST_ADMIN below; phone / email from Script Properties FIRST_ADMIN_PHONE /
+ *  FIRST_ADMIN_EMAIL) is created with a random temporary password, shown in the Execution log.
+ *  Log in and change it right away (Settings → Change password).
  * ============================================================
  */
 
@@ -44,18 +45,24 @@ const APP = {
   LEAD_MAX_PHOTOS: 5,
   LEAD_CONFIRM_EMAIL: true,                    // email the customer a confirmation (if they give an email)
   // Public showroom (vehicles.html): approved vehicles ticked "Show on website" + a Wanted board of buyer needs
-  // (no names / phone numbers). PUBLIC_PHONE = number shown for Call / WhatsApp ('' = first admin's number).
-  PUBLIC_PHONE: '0714100518',
+  // (no names / phone numbers). The number shown for Call / WhatsApp is the Script Property PUBLIC_PHONE
+  // (empty = the first admin's number from the USERS sheet).
   FACEBOOK_URL: 'https://www.facebook.com/profile.php?id=61593573333056'
 };
 
-// First admin account, created by setup() when the USERS sheet is empty
+// First admin account, created by setup() when the USERS sheet is empty.
+// Phone and email are NOT kept in the code: set Script Properties FIRST_ADMIN_PHONE and FIRST_ADMIN_EMAIL
+// (Project Settings → Script properties) before running setup().
 const FIRST_ADMIN = {
   username: 'ravi',          // login is not case-sensitive: "Ravi" works too
-  full_name: 'Ravi',
-  phone: '0779100518',
-  email: 'drcjayawardena@gmail.com'
+  full_name: 'Ravi'
 };
+
+/** Private settings (phone numbers, emails) live in Script Properties, never in the repository. */
+function cfgProp_(key) {
+  const v = PropertiesService.getScriptProperties().getProperty(key);
+  return v === null ? '' : String(v).trim();
+}
 
 // Fields that other officers may see (no customer name / phone / notes)
 const PUBLIC_FIELDS = {
@@ -209,9 +216,9 @@ function setup() {
       role: 'admin',
       active: true,
       created_at: now,
-      phone: normPhone_(FIRST_ADMIN.phone),
+      phone: normPhone_(cfgProp_('FIRST_ADMIN_PHONE')),
       approved_at: now,
-      email: cleanEmail_(FIRST_ADMIN.email)
+      email: cleanEmail_(cfgProp_('FIRST_ADMIN_EMAIL'))
     });
     firstLogin = ' Login: ' + FIRST_ADMIN.username + ' / ' + tempPw + ' (change the password right away)';
   }
@@ -1945,7 +1952,7 @@ function isWantedBuyer_(b) {
 function dayOf_(d) { return d instanceof Date ? Utilities.formatDate(d, APP.TZ, 'yyyy-MM-dd') : String(d || '').slice(0, 10); }
 
 function publicContact_() {
-  let phone = normPhone_(APP.PUBLIC_PHONE);
+  let phone = normPhone_(cfgProp_('PUBLIC_PHONE'));
   if (!phone) {
     const a = readAll_('USERS').find(function (u) { return String(u.role) === 'admin' && isTrue_(u.active) && normPhone_(u.phone); });
     phone = a ? normPhone_(a.phone) : '';

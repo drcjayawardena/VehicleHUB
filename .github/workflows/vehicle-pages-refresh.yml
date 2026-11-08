@@ -1,0 +1,18 @@
+# Refreshes the public vehicle pages every hour (and on demand) so new / sold vehicles appear on the website.
+# It re-runs "Website — deploy (GitHub Pages)", which builds the pages from the live showroom data and publishes.
+# Manual run: Actions → "Website — refresh vehicle pages" → Run workflow.
+name: Website — refresh vehicle pages
+
+on:
+  schedule:
+    - cron: '17 * * * *'   # every hour, at minute 17 (UTC)
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  refresh:
+    uses: ./.github/workflows/pages-deploy.yml

@@ -28,6 +28,17 @@
   then `git pull` here, before changing `BackEND/`. Otherwise the next deploy overwrites the editor changes.
 - Push to `main` touching `FrontEND/**` → `pages-deploy.yml` publishes the website; no Apps Script deploy needed.
 
+## SEO vehicle pages (static)
+- `scripts/build-vehicle-pages.js` (Node, no dependencies) reads `publicListings` / `publicPhotos` / `publicPhoto` from the
+  `/exec` API and generates `FrontEND/v/<vehicle_id>.html` (+ photos in `v/img/`, `v/index.json`), `sitemap.xml`, `robots.txt`.
+  These are **generated in CI and not committed** (`.gitignore`). Run locally: `node scripts/build-vehicle-pages.js`.
+- `pages-deploy.yml` runs the script before every publish (photos cached with `actions/cache`).
+  `vehicle-pages-refresh.yml` calls it **every hour** (and manually: Actions → "Website — refresh vehicle pages").
+  A failed build on a normal push does not block the website update; scheduled / manual runs fail loudly.
+- `vehicles.html` links a card to `v/<id>.html` only if the id is in `v/index.json`; otherwise (vehicle approved in the last hour)
+  it opens the old `#v=<id>` pop-up. Keep that fallback.
+- GitHub pauses scheduled workflows after 60 days without repo activity — re-enable under Actions if the hourly run stops.
+
 ## WhatsApp (Meta Cloud API, account "VehicleHUB Sri Lanka")
 Script properties (Apps Script → Project Settings). Never print or screenshot `WA_TOKEN`.
 | Property | Meaning |
@@ -37,6 +48,12 @@ Script properties (Apps Script → Project Settings). Never print or screenshot 
 | `WA_CUSTOMER_TEMPLATE` | `lead_received` — customer confirmation (3 vars: name, lead ref, agent), `sendLeadWhatsApp_` in `Code.gs` |
 | `WA_CUSTOMER_LANG` / `WA_LANG` | template language (default `en`) |
 | `WA_ENABLED` | `false` stops all sending |
+Other private settings (also Script properties — never hard-code phone numbers / emails in the code):
+| Property | Meaning |
+|---|---|
+| `PUBLIC_PHONE` | Number shown on the public showroom and static pages for Call / WhatsApp (empty → first admin's number from USERS) |
+| `FIRST_ADMIN_PHONE`, `FIRST_ADMIN_EMAIL` | Used only by `setup()` when the USERS sheet is empty |
+
 Other approved templates: `vehicle_match`, `user_approved`. Each customer send is logged to `WA_LOG` as `cust:<lead_id>`.
 
 ## Open items (as of 2026-10-29)

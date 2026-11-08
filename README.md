@@ -8,7 +8,8 @@ Data lives in a Google Sheet, the backend is Google Apps Script, the website is 
 |---|---|---|
 | `BackEND/` | Google Apps Script code — `Code.gs`, `Matching.gs`, `McLogin.gs`, `WhatsApp.gs`, `Index.html`, `appsscript.json`, `.clasp.json` | Apps Script web app (workflow **Apps Script — deploy**) |
 | `FrontEND/` | Website — `index.html` (app), `request.html`, `vehicles.html`, `config.js` (/exec URL), `plate.js`, `years.js`, `sw.js`, icons | GitHub Pages (workflow **Website — deploy**) |
-| `.github/workflows/` | Automatic deploy / pull workflows | — |
+| `scripts/` | `build-vehicle-pages.js` — builds the SEO vehicle pages, `sitemap.xml`, `robots.txt` (runs in the website deploy, hourly) | part of the website |
+| `.github/workflows/` | Automatic deploy / pull / hourly refresh workflows | — |
 | `CLAUDE.md` | Project notes for Claude Code | — |
 
 ## 🚀 How deploy works

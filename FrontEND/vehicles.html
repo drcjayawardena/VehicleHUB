@@ -69,6 +69,7 @@
   .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 14px; }
   .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; cursor: pointer; display: flex; flex-direction: column;
           transition: box-shadow .15s, transform .15s; }
+  a.card { color: inherit; text-decoration: none; }
   .card:hover { box-shadow: 0 10px 24px rgba(20,40,80,.10); transform: translateY(-2px); }
   .thumb { position: relative; aspect-ratio: 4 / 3; background: #e6ebf3 center / cover no-repeat; display: flex; align-items: center; justify-content: center; color: #9aa7ba; }
   .thumb .ic { width: 48px; height: 48px; stroke-width: 1.4; }
@@ -225,7 +226,19 @@
   var TYPE_ICON = { 'Car': 'car', 'SUV / Jeep': 'suv', 'Van': 'van', 'Cab / Pickup': 'pickup', 'Motorcycle': 'bike', 'Three Wheeler': 'tuk', 'Lorry': 'lorry', 'Bus': 'bus' };
   function typeIcon(t) { return TYPE_ICON[t] || 'car'; }
 
-  var S = { data: null, mode: 'sale', type: '', page: 1, thumbs: {}, loading: {} };
+  // S.built = ids that already have a static SEO page (v/<id>.html, see scripts/build-vehicle-pages.js).
+  // A vehicle approved in the last hour has no page yet — its card opens the pop-up (#v=<id>) instead.
+  var S = { data: null, mode: 'sale', type: '', page: 1, thumbs: {}, loading: {}, built: {} };
+  function pageUrl(id) { return 'v/' + encodeURIComponent(id) + '.html'; }
+  function shareUrl(id) { return S.built[id] ? new URL(pageUrl(id), location.href).href : location.href.split('#')[0] + '#v=' + id; }
+  async function loadBuilt() {
+    try {
+      var r = await fetch('v/index.json', { cache: 'no-cache' });
+      if (!r.ok) return;
+      var j = await r.json();
+      (j.ids || []).forEach(function (id) { S.built[String(id)] = 1; });
+    } catch (e) { /* no static pages — every card uses the pop-up */ }
+  }
 
   // ---------- static labels ----------
   $('t_sale').innerHTML = ic('car') + ' Vehicles for sale';
@@ -383,14 +396,17 @@
     }).join('');
     $('pager').querySelectorAll('button').forEach(function (b) { b.onclick = function () { S.page = +b.dataset.p; render(); window.scrollTo({ top: 0 }); }; });
     if (sale) {
-      $('grid').querySelectorAll('.card').forEach(function (c) { c.onclick = function () { openDetail(c.dataset.id); }; });
+      // Cards with a static page are normal links (open in new tab, share, crawl). Others use the pop-up.
+      $('grid').querySelectorAll('.card').forEach(function (c) {
+        c.onclick = function (e) { if (S.built[c.dataset.id]) return; e.preventDefault(); openDetail(c.dataset.id); };
+      });
       loadThumbs(show.filter(function (x) { return x.photos; }).map(function (x) { return x.id; }));
     }
   }
 
   function saleCard(v) {
     var th = S.thumbs[v.id];
-    return '<div class="card" data-id="' + esc(v.id) + '" tabindex="0" role="button" aria-label="' + esc(carName(v)) + '">' +
+    return '<a class="card" data-id="' + esc(v.id) + '" href="' + (S.built[v.id] ? esc(pageUrl(v.id)) : '#v=' + esc(v.id)) + '" aria-label="' + esc(carName(v)) + '">' +
       '<div class="thumb' + (th ? ' loaded' : '') + '" id="th_' + esc(v.id) + '"' + (th ? ' style="background-image:url(\'' + th + '\')"' : '') + '>' + ic(typeIcon(v.type)) +
       (isNew(v.date) ? '<span class="tag">NEW</span>' : '') +
       (v.photos ? '<span class="pc">' + ic('camera') + v.photos + '</span>' : '') + '</div>' +
@@ -398,7 +414,7 @@
       '<div class="s">' + esc([v.year, v.condition, v.color, v.district].filter(Boolean).join(' · ') || v.type) + '</div>' +
       (v.mileage !== '' && v.mileage != null ? '<div class="s">' + esc(Number(v.mileage).toLocaleString('en-US')) + ' km' + (v.fuel ? ' · ' + esc(v.fuel) : '') + (v.transmission ? ' · ' + esc(v.transmission) : '') + '</div>' : '') +
       '<div class="pr">' + esc(rs(v.price)) + (v.price !== '' ? ' <small>(' + esc(lk(v.price)) + ')</small>' : '') + '</div>' +
-      '<div class="f"><span>' + esc(v.type) + '</span><span>' + esc(ago(v.date)) + '</span></div></div></div>';
+      '<div class="f"><span>' + esc(v.type) + '</span><span>' + esc(ago(v.date)) + '</span></div></div></a>';
   }
 
   function wantCard(w) {
@@ -437,7 +453,7 @@
     var c = S.data.contact || {}, title = carName(v) + (v.year ? ' ' + v.year : '');
     var enquire = 'request.html?type=buyer&src=showroom&about=' + encodeURIComponent(v.id) + '&make=' + encodeURIComponent(v.make) +
       '&model=' + encodeURIComponent(v.model) + '&vtype=' + encodeURIComponent(v.type) + '&year=' + encodeURIComponent(v.year) + '&price=' + encodeURIComponent(v.price);
-    var msg = 'Hi VehicleHub, I am interested in ' + title + ' (' + rs(v.price) + ') — Ref ' + v.id + '. ' + location.href.split('#')[0] + '#v=' + v.id;
+    var msg = 'Hi VehicleHub, I am interested in ' + title + ' (' + rs(v.price) + ') — Ref ' + v.id + '. ' + shareUrl(v.id);
     var num = c.phone ? '94' + String(c.phone).replace(/^0/, '') : '';
     var m = document.createElement('div'); m.className = 'modal';
     m.innerHTML = '<div class="dlg" role="dialog" aria-label="' + esc(title) + '">' +
@@ -470,7 +486,7 @@
     m.onclick = function (e) { if (e.target === m) close(); };
     document.addEventListener('keydown', function k(e) { if (e.key === 'Escape') { close(); document.removeEventListener('keydown', k); } });
     m.querySelector('#shareBtn').onclick = function () {
-      var url = location.href.split('#')[0] + '#v=' + v.id;
+      var url = shareUrl(v.id);
       if (navigator.share) navigator.share({ title: title, text: title + ' — ' + rs(v.price), url: url }).catch(function () {});
       else if (navigator.clipboard) navigator.clipboard.writeText(url).then(function () { alert('Link copied'); });
       else prompt('Copy this link:', url);
@@ -503,7 +519,8 @@
   async function load() {
     $('grid').innerHTML = '<div class="sk"></div><div class="sk"></div><div class="sk"></div><div class="sk"></div>';
     try {
-      S.data = await call('publicListings', []);
+      var res = await Promise.all([call('publicListings', []), loadBuilt()]);
+      S.data = res[0];
       fillFilterLists();
       if (S.data.contact && S.data.contact.facebook) $('fFb').href = S.data.contact.facebook;
       fromHash();
