@@ -158,6 +158,9 @@
       <h3 id="fTitle"></h3>
       <label for="f_make">Make</label><select id="f_make"></select>
       <label for="f_model">Model</label><input id="f_model" placeholder="Any model">
+      <div id="districtBox"><label for="f_district">District</label><select id="f_district"><option value="">Any district</option></select></div>
+      <div id="fuelBox"><label for="f_fuel">Fuel</label><select id="f_fuel"><option value="">Any fuel</option></select></div>
+      <div id="transmissionBox"><label for="f_transmission">Transmission</label><select id="f_transmission"><option value="">Any transmission</option></select></div>
       <div id="yearBox"><label>Year</label><div class="two"><input id="f_ymin" type="number" inputmode="numeric" placeholder="From"><input id="f_ymax" type="number" inputmode="numeric" placeholder="To"></div></div>
       <label id="priceL">Price (Lakhs)</label><div class="two"><input id="f_pmin" type="number" inputmode="decimal" placeholder="Min"><input id="f_pmax" type="number" inputmode="decimal" placeholder="Max"></div>
       <div id="condBox"><label for="f_cond">Condition</label><select id="f_cond"><option value="">Any</option></select></div>
@@ -274,19 +277,28 @@
   // ---------- filters ----------
   function readF() {
     return { make: $('f_make').value, model: norm($('f_model').value), ymin: Number($('f_ymin').value) || 0, ymax: Number($('f_ymax').value) || 0,
-             pmin: Number($('f_pmin').value) || 0, pmax: Number($('f_pmax').value) || 0, cond: $('f_cond').value, q: norm($('q').value) };
+             pmin: Number($('f_pmin').value) || 0, pmax: Number($('f_pmax').value) || 0, cond: $('f_cond').value,
+             district: $('f_district').value, fuel: $('f_fuel').value, transmission: $('f_transmission').value, q: norm($('q').value) };
   }
-  ['f_make', 'f_cond', 'sort'].forEach(function (id) { $(id).onchange = function () { S.page = 1; render(); }; });
+  ['f_make', 'f_cond', 'f_district', 'f_fuel', 'f_transmission', 'sort'].forEach(function (id) { $(id).onchange = function () { S.page = 1; render(); }; });
   $('f_apply').onclick = function () { S.page = 1; render(); $('panel').classList.remove('open'); };
-  $('f_clear').onclick = function () { ['f_make', 'f_model', 'f_ymin', 'f_ymax', 'f_pmin', 'f_pmax', 'f_cond'].forEach(function (id) { $(id).value = ''; }); $('q').value = ''; S.type = ''; S.page = 1; render(); };
+  $('f_clear').onclick = function () { ['f_make', 'f_model', 'f_ymin', 'f_ymax', 'f_pmin', 'f_pmax', 'f_cond', 'f_district', 'f_fuel', 'f_transmission'].forEach(function (id) { $(id).value = ''; }); $('q').value = ''; S.type = ''; S.page = 1; render(); };
   $('qform').onsubmit = function (e) { e.preventDefault(); S.page = 1; render(); };
 
   function fillFilterLists() {
-    var d = S.data, makes = {}, conds = {};
+    var d = S.data, makes = {}, conds = {}, districts = {}, fuels = {}, transmissions = {};
     d.vehicles.concat(d.wanted).forEach(function (x) { if (x.make) makes[x.make] = 1; });
+    d.vehicles.concat(d.wanted).forEach(function (x) {
+      if (x.district) districts[x.district] = 1;
+      if (x.fuel) fuels[x.fuel] = 1;
+      if (x.transmission) transmissions[x.transmission] = 1;
+    });
     d.vehicles.forEach(function (x) { if (x.condition) conds[x.condition] = 1; });
     $('f_make').innerHTML = '<option value="">Any make</option>' + Object.keys(makes).sort().map(function (m) { return '<option>' + esc(m) + '</option>'; }).join('');
     $('f_cond').innerHTML = '<option value="">Any</option>' + Object.keys(conds).sort().map(function (m) { return '<option>' + esc(m) + '</option>'; }).join('');
+    $('f_district').innerHTML = '<option value="">Any district</option>' + Object.keys(districts).sort().map(function (m) { return '<option>' + esc(m) + '</option>'; }).join('');
+    $('f_fuel').innerHTML = '<option value="">Any fuel</option>' + Object.keys(fuels).sort().map(function (m) { return '<option>' + esc(m) + '</option>'; }).join('');
+    $('f_transmission').innerHTML = '<option value="">Any transmission</option>' + Object.keys(transmissions).sort().map(function (m) { return '<option>' + esc(m) + '</option>'; }).join('');
   }
 
   function renderTypes() {
@@ -328,7 +340,10 @@
       if (S.type && x.type !== S.type) return false;
       if (f.make && x.make !== f.make) return false;
       if (f.model && norm(x.model).indexOf(f.model) === -1) return false;
-      if (f.q && norm(x.make + x.model + x.type).indexOf(f.q) === -1) return false;
+      if (f.q && norm([x.make, x.model, x.type, x.district, x.fuel, x.transmission].join(' ')).indexOf(f.q) === -1) return false;
+      if (f.district && x.district !== f.district) return false;
+      if (f.fuel && x.fuel !== f.fuel) return false;
+      if (f.transmission && x.transmission !== f.transmission) return false;
       if (sale) {
         if (f.cond && x.condition !== f.cond) return false;
         if (f.ymin && (!x.year || x.year < f.ymin)) return false;
@@ -380,7 +395,8 @@
       (isNew(v.date) ? '<span class="tag">NEW</span>' : '') +
       (v.photos ? '<span class="pc">' + ic('camera') + v.photos + '</span>' : '') + '</div>' +
       '<div class="b"><div class="t">' + esc(carName(v)) + '</div>' +
-      '<div class="s">' + esc([v.year, v.condition, v.color].filter(Boolean).join(' · ') || v.type) + '</div>' +
+      '<div class="s">' + esc([v.year, v.condition, v.color, v.district].filter(Boolean).join(' · ') || v.type) + '</div>' +
+      (v.mileage !== '' && v.mileage != null ? '<div class="s">' + esc(Number(v.mileage).toLocaleString('en-US')) + ' km' + (v.fuel ? ' · ' + esc(v.fuel) : '') + (v.transmission ? ' · ' + esc(v.transmission) : '') + '</div>' : '') +
       '<div class="pr">' + esc(rs(v.price)) + (v.price !== '' ? ' <small>(' + esc(lk(v.price)) + ')</small>' : '') + '</div>' +
       '<div class="f"><span>' + esc(v.type) + '</span><span>' + esc(ago(v.date)) + '</span></div></div></div>';
   }

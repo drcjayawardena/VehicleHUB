@@ -1963,6 +1963,8 @@ function publicListings() {
     return {
       id: String(v.vehicle_id), type: String(v.vehicle_type || ''), make: String(v.make || ''), model: String(v.model || ''),
       year: v.year === '' ? '' : Number(v.year), price: v.price === '' ? '' : Number(v.price),
+      mileage: v.mileage === '' ? '' : Number(v.mileage), fuel: String(v.fuel || ''),
+      transmission: String(v.transmission || ''), district: String(v.district || ''),
       condition: String(v.condition || ''), color: String(v.color || ''),
       photos: Number(v.photo_count) || 0, date: dayOf_(v.approved_at || v.created_at)
     };
@@ -1973,6 +1975,7 @@ function publicListings() {
       id: String(b.buyer_id), type: String(b.vehicle_type || ''), make: String(b.make || ''), model: String(b.model || ''),
       year_from: b.year_from === '' ? '' : Number(b.year_from), year_to: b.year_to === '' ? '' : Number(b.year_to),
       min_budget: b.min_budget === '' ? '' : Number(b.min_budget), max_budget: b.max_budget === '' ? '' : Number(b.max_budget),
+      fuel: String(b.fuel || ''), transmission: String(b.transmission || ''), district: String(b.district || ''),
       date: dayOf_(b.created_at)
     };
   }).sort(function (a, b) { return a.date < b.date ? 1 : a.date > b.date ? -1 : 0; });
