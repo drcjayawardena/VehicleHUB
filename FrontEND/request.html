@@ -24,10 +24,6 @@
     padding: 12px 16px; box-shadow: var(--sh); }
   header .logo { height: 72px; width: auto; max-width: 86%; display: block; }
   .ic { width: 20px; height: 20px; flex: 0 0 auto; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; vertical-align: -4px; }
-  .badge-ic { width: 56px; height: 56px; border-radius: 16px; display: flex; align-items: center; justify-content: center; flex: 0 0 56px; color: #fff; }
-  .badge-ic .ic { width: 28px; height: 28px; }
-  .buy .badge-ic { background: linear-gradient(135deg, var(--p3), var(--p)); box-shadow: 0 6px 14px rgba(45,91,208,.35); }
-  .sell .badge-ic { background: linear-gradient(135deg, var(--or2), var(--or)); box-shadow: 0 6px 14px rgba(217,119,6,.35); }
   .h-ic { display: inline-flex; width: 38px; height: 38px; border-radius: 12px; align-items: center; justify-content: center; vertical-align: -9px; margin-right: 10px; color: #fff; }
   .h-ic.buy { background: linear-gradient(135deg, var(--p3), var(--p)); } .h-ic.sell { background: linear-gradient(135deg, var(--or2), var(--or)); }
   .okc { width: 84px; height: 84px; border-radius: 50%; background: linear-gradient(135deg, #34c76f, var(--ok)); color: #fff; display: flex; align-items: center; justify-content: center;
@@ -36,27 +32,20 @@
   .card { background: #fff; border-radius: 22px; padding: 22px 20px; box-shadow: var(--sh); margin-bottom: 16px; animation: rise .35s ease-out both; }
   h1 { font-size: 24px; margin: 0 0 6px; line-height: 1.25; letter-spacing: -.2px; }
   p.lead { margin: 0 0 16px; color: var(--mut); }
-  .trust { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 18px; padding: 0; list-style: none; }
-  .trust li { display: inline-flex; align-items: center; gap: 6px; background: #f1f5ff; color: var(--p); border-radius: 999px; padding: 5px 12px; font-size: 13px; font-weight: 600; }
-  .trust li .ic { width: 15px; height: 15px; stroke-width: 2.6; }
   .choice { display: grid; gap: 12px; }
-  .choice button { display: flex; align-items: center; gap: 14px; width: 100%; text-align: left; border: 1.5px solid var(--line); background: #fff;
-    border-radius: 18px; padding: 16px; font-size: 18px; font-weight: 700; cursor: pointer; color: var(--ink);
+  .choice button { position: relative; display: flex; align-items: center; gap: 14px; min-width: 0; width: 100%; text-align: left; border: 1.5px solid var(--line); background: #fff;
+    border-radius: 18px; padding: 10px 40px 10px 10px; font-size: 18px; font-weight: 700; cursor: pointer; color: var(--ink);
     transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease, background .15s ease; }
-  .choice button > span:nth-child(2) { flex: 1 1 auto; }
-  .choice button::after { content: "\203A"; font-size: 30px; line-height: 1; color: #b4bfd3; font-weight: 400; transition: transform .15s ease, color .15s ease; }
-  .choice button small { display: block; font-weight: 400; color: var(--mut); font-size: 14px; margin-top: 2px; }
+  .choice-photo { display: block; flex: 0 0 112px; width: 112px; height: 84px; object-fit: cover; border-radius: 12px; background: #eef2f9; }
+  .choice-copy { display: block; flex: 1 1 auto; min-width: 0; }
+  .choice button::after { content: "\203A"; position: absolute; right: 14px; top: 50%; transform: translateY(-50%); font-size: 28px; line-height: 1; color: #b4bfd3; font-weight: 400; transition: transform .15s ease, color .15s ease; }
+  .choice button small { display: block; font-weight: 400; color: var(--mut); font-size: 13px; margin-top: 3px; }
   .choice button:hover, .choice button:focus-visible { transform: translateY(-2px); box-shadow: var(--sh); outline: none; }
-  .choice button:hover::after, .choice button:focus-visible::after { transform: translateX(3px); }
+  .choice button:hover::after, .choice button:focus-visible::after { transform: translate(3px, -50%); }
   .choice .buy:hover, .choice .buy:focus-visible { border-color: var(--p2); background: #f6f9ff; }
   .choice .buy:hover::after, .choice .buy:focus-visible::after { color: var(--p2); }
   .choice .sell:hover, .choice .sell:focus-visible { border-color: var(--or); background: #fffaf2; }
   .choice .sell:hover::after, .choice .sell:focus-visible::after { color: var(--or); }
-  .how { margin: 20px 0 4px; border-top: 1px solid var(--line); padding-top: 16px; }
-  .how h2 { font-size: 15px; margin: 0 0 12px; color: var(--p); }
-  .how ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
-  .how li { display: flex; gap: 12px; align-items: center; font-size: 14px; color: var(--ink); }
-  .how li b { flex: 0 0 28px; height: 28px; border-radius: 50%; background: #eef3ff; color: var(--p); display: flex; align-items: center; justify-content: center; font-size: 14px; }
   label.f { display: block; margin: 0 0 14px; }
   label.f > span { display: block; font-size: 14px; font-weight: 600; margin-bottom: 6px; color: #2a3446; }
   label.f > span em { font-style: normal; color: var(--bad); }
@@ -214,8 +203,8 @@
 
   var T = {
     en: {
-      title: 'Want to buy or sell a vehicle?',
-      lead: 'Send us your details here and we will contact you shortly. Free for buyers.',
+      title: 'Looking to buy or sell a vehicle?',
+      lead: 'Send us your details here and we will contact you.',
       buy: 'I want to buy a vehicle', buyS: 'We will find the vehicle you are looking for',
       sell: 'I want to sell my vehicle', sellS: 'We will find a buyer for your vehicle',
       aboutV: 'Enquiry about vehicle', aboutB: 'Your offer for the wanted request', showroom: 'Browse vehicles for sale',
@@ -247,15 +236,13 @@
       pe_auto: 'The number plate was blurred automatically. Please check — if it is wrong, press Undo and draw a box over the plate.',
       pe_none: 'Could not find the number plate — draw a box over it with your finger.',
       foot: 'Your details are kept safe and used only to contact you.',
-      tr1: 'Free for buyers', tr2: 'An agent calls you soon', tr3: 'All of Sri Lanka',
-      howT: 'How it works', how1: 'Tell us what you want to buy or sell', how2: 'An agent calls you to confirm the details', how3: 'We match buyers and sellers for you',
       sellQT: 'We will sell your vehicle for you', sellQL: 'Give us your vehicle details — your officer will find a buyer and call you.',
       quickT: 'We will find the right vehicle for you', quickL: 'Tell us what you want — your officer will call you with matching vehicles. Free.',
       other: 'සිංහල'
     },
     si: {
-      title: 'වාහනයක් ගන්න හෝ විකුණන්න ඕනෑද?',
-      lead: 'ඔබේ විස්තර මෙතැනින් එවන්න — අපි ඉක්මනින් ඔබට කතා කරන්නම්. ගැනුම්කරුවන්ට නොමිලේ.',
+      title: 'වාහනයක් ගන්න හෝ විකුණන්න හිතනවාද?',
+      lead: 'ඔබේ විස්තර මෙතැනින් එවන්න — අපි ඔබට කතා කරන්නම්.',
       buy: 'මට වාහනයක් ගන්න ඕනෑ', buyS: 'ඔබ හොයන වාහනය අපි හොයලා දෙන්නම්',
       sell: 'මගේ වාහනය විකුණන්න ඕනෑ', sellS: 'ඔබේ වාහනයට ගැනුම්කරුවෙක් හොයලා දෙන්නම්',
       showroom: 'විකිණීමට ඇති වාහන බලන්න',
@@ -280,8 +267,6 @@
       waMsg: function (ref, name) { return 'ආයුබෝවන්, මම ' + name + '. මම VehicleHub එකට request එකක් යැව්වා. යොමු අංකය: ' + ref; },
       again: 'තවත් request එකක් යවන්න',
       foot: 'ඔබේ විස්තර ආරක්ෂිතයි. ඔබව සම්බන්ධ කරගන්න විතරයි පාවිච්චි කරන්නේ.',
-      tr1: 'ගන්න අයට නොමිලේ', tr2: 'ඉක්මනින් කතා කරනවා', tr3: 'මුළු ලංකාවටම',
-      howT: 'වැඩ කරන විදිහ', how1: 'ගන්න හෝ විකුණන්න ඕන වාහනය ගැන කියන්න', how2: 'නියෝජිතයෙක් ඔබට කතා කරලා විස්තර තහවුරු කරගන්නවා', how3: 'අපි ගැනුම්කරුවන් සහ විකුණුම්කරුවන් ගළපලා දෙනවා',
       quickT: 'ඔබට ගැලපෙන වාහනය අපි හොයලා දෙන්නම්', quickL: 'ඔබට ඕනෑ දේ කියන්න — ගැලපෙන වාහන එක්ක ඔබේ නිලධාරියා ඔබට කතා කරයි. නොමිලේ.',
       sellQT: 'ඔබේ වාහනය අපි විකුණලා දෙන්නම්', sellQL: 'ඔබේ වාහනයේ විස්තර දෙන්න — ගැනුම්කරුවෙක් හොයලා ඔබේ නිලධාරියා ඔබට කතා කරයි.',
       year: 'නිෂ්පාදිත අවුරුද්ද', price: 'බලාපොරොත්තු මිල (ලක්ෂ)',
@@ -318,12 +303,10 @@
     state.type = ''; state.done = null;
     $('app').innerHTML =
       '<div class="card"><h1>' + t('title') + '</h1><p class="lead">' + t('lead') + '</p>' +
-      '<ul class="trust"><li>' + ic('check') + t('tr1') + '</li><li>' + ic('check') + t('tr2') + '</li><li>' + ic('check') + t('tr3') + '</li></ul>' +
       '<div class="choice">' +
-      '<button type="button" class="buy" id="c_buy"><span class="badge-ic">' + ic('search') + '</span><span>' + t('buy') + '<small>' + t('buyS') + '</small></span></button>' +
-      '<button type="button" class="sell" id="c_sell"><span class="badge-ic">' + ic('car') + '</span><span>' + t('sell') + '<small>' + t('sellS') + '</small></span></button>' +
-      '</div><a class="btn" href="vehicles.html" style="width:100%;margin-top:12px">' + ic('car') + ' ' + t('showroom') + '</a>' +
-      '<div class="how"><h2>' + t('howT') + '</h2><ol><li><b>1</b>' + t('how1') + '</li><li><b>2</b>' + t('how2') + '</li><li><b>3</b>' + t('how3') + '</li></ol></div></div>';
+      '<button type="button" class="buy" id="c_buy"><img class="choice-photo" src="images/request-buy.jpg" alt="" fetchpriority="high"><span class="choice-copy">' + t('buy') + '<small>' + t('buyS') + '</small></span></button>' +
+      '<button type="button" class="sell" id="c_sell"><img class="choice-photo" src="images/request-sell.jpg" alt="" loading="lazy"><span class="choice-copy">' + t('sell') + '<small>' + t('sellS') + '</small></span></button>' +
+      '</div><a class="btn" href="vehicles.html" style="width:100%;margin-top:12px">' + ic('car') + ' ' + t('showroom') + '</a></div>';
     $('c_buy').onclick = function () { state.type = 'buyer'; renderForm(); window.scrollTo(0, 0); };
     $('c_sell').onclick = function () { state.type = 'seller'; renderForm(); window.scrollTo(0, 0); };
   }
