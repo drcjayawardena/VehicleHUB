@@ -123,7 +123,8 @@
   // From a MasterCAL quotation: ?q=1[&type=seller]&ref=<officer>&v=car|tw|bike&p=<customer phone>
   //   short, Sinhala-first buy (or sell) form, already filled in as far as we know.
   var QUICK = qs.get('q') === '1';
-  var lang = qs.get('lang') === 'en' ? 'en' : (qs.get('lang') === 'si' || QUICK ? 'si' : 'en');
+  var lang = qs.get('lang') === 'en' ? 'en' : 'si';
+  document.documentElement.lang = lang;
   var MAX_PHOTOS = 5;
   // Coming from the showroom: ?type=buyer&about=V0001&make=..&model=..&vtype=..&year=..&price=..
   //                  or Wanted: ?type=seller&about=B0003&make=..&model=..&vtype=..
@@ -247,36 +248,36 @@
       sell: 'මගේ වාහනය විකුණන්න ඕනෑ', sellS: 'ඔබේ වාහනයට ගැනුම්කරුවෙක් හොයලා දෙන්නම්',
       showroom: 'විකිණීමට ඇති වාහන බලන්න',
       back: 'ආපසු', buyTitle: 'ඔබට ඕනෑ වාහනය', sellTitle: 'ඔබේ වාහනය',
-      vtype: 'වාහන වර්‍ගය', any: 'ඕනෑම එකක්', select: '— තෝරන්න —', otherOpt: 'වෙනත්…', pickMake: 'මුලින් Make තෝරන්න', make: 'Make', model: 'Model',
+      vtype: 'වාහන වර්ගය', any: 'ඕනෑම එකක්', select: '— තෝරන්න —', otherOpt: 'වෙනත්…', pickMake: 'මුලින් නිෂ්පාදකයා තෝරන්න', make: 'නිෂ්පාදකයා', model: 'මොඩලය',
       makePh: 'උදා: Toyota', modelPh: 'උදා: Aqua', notSure: 'අවශ්‍ය නෑ',
       yFrom: 'අවුරුද්ද (සිට)', yTo: 'අවුරුද්ද (දක්වා)', budMin: 'අවම මුදල (ලක්ෂ)', budMax: 'උපරිම මුදල (ලක්ෂ)',
       lakhsHint: 'උදා: රු. 6,250,000 = 62.5',
-      leasing: 'මට leasing / finance ඕනෑ',
-      you: 'ඔබේ විස්තර', name: 'ඔබේ නම', phone: 'දුරකථන / WhatsApp අංකය', email: 'Email', optional: '(අනිවාර්‍ය නැත)',
-      notes: 'වෙනත් විස්තර', notesPh: 'උදා: පාට වැදගත් නැහැ, ඉක්මනට ඕනෑ',
+      leasing: 'වාහන ලීසිං හෝ මූල්‍ය පහසුකමක් අවශ්‍යයි',
+      you: 'ඔබේ විස්තර', name: 'ඔබේ නම', phone: 'දුරකථන / WhatsApp අංකය', email: 'විද්‍යුත් තැපෑල', optional: '(විකල්පයි)',
+      notes: 'වෙනත් විස්තර', notesPh: 'උදා: විශේෂ වර්ණයක් අවශ්‍ය නැහැ, ඉක්මනින් අවශ්‍යයි',
       consent: 'මාව සම්බන්ධ කරගන්න VehicleHub නියෝජිතයෙකුට මගේ විස්තර පාවිච්චි කරන්න මම එකඟයි. මගේ අංකය වෙන කිසිවෙකුට දෙන්න එපා.',
-      send: 'Request එක යවන්න', sending: 'යවමින්…',
-      e_name: 'කරුණාකර ඔබේ නම දාන්න.', e_phone: 'හරි mobile අංකයක් දාන්න (07XXXXXXXX).',
-      e_email: 'Email ලිපිනය හරි නැහැ.', e_consent: 'කරුණාකර එකඟතා box එක tick කරන්න.',
+      send: 'ඉල්ලීම යවන්න', sending: 'යවමින්…',
+      e_name: 'කරුණාකර ඔබේ නම ඇතුළත් කරන්න.', e_phone: 'වලංගු දුරකථන අංකයක් ඇතුළත් කරන්න (07XXXXXXXX).',
+      e_email: 'විද්‍යුත් තැපැල් ලිපිනය නිවැරදි නැත.', e_consent: 'කරුණාකර එකඟතා කොටුව සලකුණු කරන්න.',
       e_budget: 'කරුණාකර ඔබේ උපරිම මුදල (ලක්ෂ) දාන්න.',
-      e_net: 'යවන්න බැරි වුණා. Internet එක බලලා ආයෙ උත්සාහ කරන්න.',
-      thanks: 'ස්තූතියි! ඔබේ request එක ලැබුණා.', refL: 'යොමු අංකය',
+      e_net: 'යැවීම අසාර්ථකයි. අන්තර්ජාල සම්බන්ධතාව පරීක්ෂා කර නැවත උත්සාහ කරන්න.',
+      thanks: 'ස්තූතියි! ඔබේ ඉල්ලීම ලැබුණා.', refL: 'යොමු අංකය',
       agent: function (n) { return 'අපේ නියෝජිත ' + n + ' ඉක්මනින් ඔබට කතා කරයි.'; },
       agentAny: 'අපේ නියෝජිතයෙක් ඉක්මනින් ඔබට කතා කරයි.',
-      waBtn: 'WhatsApp එකෙන් තහවුරු කරන්න', waHint: 'Button එක ඔබලා message එක යවන්න.',
+      waBtn: 'WhatsApp මගින් තහවුරු කරන්න', waHint: 'බොත්තම ඔබා පණිවිඩය යවන්න.',
       waMsg: function (ref, name) { return 'ආයුබෝවන්, මම ' + name + '. මම VehicleHub එකට request එකක් යැව්වා. යොමු අංකය: ' + ref; },
       again: 'තවත් request එකක් යවන්න',
       foot: 'ඔබේ විස්තර ආරක්ෂිතයි. ඔබව සම්බන්ධ කරගන්න විතරයි පාවිච්චි කරන්නේ.',
       quickT: 'ඔබට ගැලපෙන වාහනය අපි හොයලා දෙන්නම්', quickL: 'ඔබට ඕනෑ දේ කියන්න — ගැලපෙන වාහන එක්ක ඔබේ නිලධාරියා ඔබට කතා කරයි. නොමිලේ.',
       sellQT: 'ඔබේ වාහනය අපි විකුණලා දෙන්නම්', sellQL: 'ඔබේ වාහනයේ විස්තර දෙන්න — ගැනුම්කරුවෙක් හොයලා ඔබේ නිලධාරියා ඔබට කතා කරයි.',
       year: 'නිෂ්පාදිත අවුරුද්ද', price: 'බලාපොරොත්තු මිල (ලක්ෂ)',
-      photos: 'Photos', photosHint: '5ක් දක්වා. Number plate එක ඉබේම blur වෙනවා — හැම photo එකකම බලලා හදන්න පුළුවන්.',
-      addPhotos: 'Photos දාන්න', e_seller: 'කරුණාකර make, model සහ මිල දාන්න.',
-      pe_t: function (n, t) { return 'Photo ' + n + ' / ' + t + ' — number plate එක බලන්න'; },
-      pe_h: 'ඇඟිල්ලෙන් ඇදලා box අඳින්න පුළුවන්. ඒ කොටස සම්පූර්‍ණයෙන්ම වැහෙනවා.',
-      pe_undo: 'Undo', pe_skip: 'මේ photo එක අයින් කරන්න', pe_ok: 'හරි',
-      pe_auto: 'Number plate එක ඉබේම blur කළා. හරිද බලන්න — වැරදි නම් Undo ඔබලා plate එක උඩින් box එකක් අඳින්න.',
-      pe_none: 'Number plate එක හොයාගන්න බැරි වුණා — plate එක උඩින් ඇඟිල්ලෙන් box එකක් අඳින්න.',
+      photos: 'ඡායාරූප', photosHint: 'ඡායාරූප 5ක් දක්වා එක් කරන්න. අංක තහඩුව ස්වයංක්‍රීයව බොඳ වේ. සෑම ඡායාරූපයක්ම පරීක්ෂා කර අවශ්‍ය සංශෝධන කළ හැක.',
+      addPhotos: 'ඡායාරූප එක් කරන්න', e_seller: 'කරුණාකර නිෂ්පාදකයා, මොඩලය සහ මිල ඇතුළත් කරන්න.',
+      pe_t: function (n, t) { return 'ඡායාරූපය ' + n + ' / ' + t + ' — අංක තහඩුව වටා කොටුවක් අඳින්න'; },
+      pe_h: 'ඇඟිල්ලෙන් ඇදලා කොටුවක් අඳින්න. ඔබ සලකුණු කළ කොටස සම්පූර්ණයෙන්ම වැසෙනු ඇත.',
+      pe_undo: 'පෙර පියවර', pe_skip: 'මෙම ඡායාරූපය ඉවත් කරන්න', pe_ok: 'හරි',
+      pe_auto: 'අංක තහඩුව ස්වයංක්‍රීයව බොඳ කළා. පරීක්ෂා කරන්න. වැරදි නම් පෙර පියවර ගෙන තහඩුව වටා කොටුවක් අඳින්න.',
+      pe_none: 'අංක තහඩුව සොයාගත නොහැකි වුණා. තහඩුව වටා කොටුවක් අඳින්න.',
       other: 'English'
     }
   };
