@@ -9,67 +9,101 @@
 <script src="config.js"></script>
 <script src="plate.js"></script>
 <style>
-  :root { --p:#1d3f8f; --p2:#2d5bd0; --ink:#172033; --mut:#5f6b7d; --bg:#f3f5f9; --line:#dde3ee; --ok:#1b7a3d; --bad:#c0392b; --or:#b86200; }
+  :root { --p:#1d3f8f; --p2:#2d5bd0; --p3:#4f7cf0; --ink:#172033; --mut:#5f6b7d; --bg:#eef2f9; --line:#dde3ee; --ok:#1b7a3d; --bad:#c0392b; --or:#d97706; --or2:#f59e0b;
+    --sh:0 10px 30px rgba(20,40,90,.10), 0 2px 6px rgba(20,40,90,.06); }
   * { box-sizing: border-box; }
-  body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.5 system-ui, -apple-system, "Segoe UI", "Noto Sans Sinhala", "Iskoola Pota", Roboto, Arial, sans-serif; }
-  .wrap { max-width: 560px; margin: 0 auto; padding: 16px; }
-  header { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; background: #fff; border: 1px solid var(--line);
-    border-radius: 16px; padding: 10px 14px; box-shadow: 0 6px 18px rgba(20,40,80,.05); }
-  header { justify-content: center; }
-  header .logo { height: 76px; width: auto; max-width: 86%; display: block; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { margin: 0; background: var(--bg); color: var(--ink); min-height: 100vh;
+    font: 16px/1.5 system-ui, -apple-system, "Segoe UI", "Noto Sans Sinhala", "Iskoola Pota", Roboto, Arial, sans-serif; }
+  /* blue hero band behind the top of the page */
+  body::before { content: ""; position: absolute; inset: 0 0 auto 0; height: 300px; z-index: -1;
+    background: radial-gradient(120% 90% at 85% 0%, #4f7cf0 0%, transparent 55%), radial-gradient(90% 80% at 0% 10%, #2d5bd0 0%, transparent 60%), linear-gradient(160deg, #16316f, #1d3f8f 60%, #2448a8);
+    border-radius: 0 0 36px 36px; }
+  .wrap { max-width: 580px; margin: 0 auto; padding: max(16px, env(safe-area-inset-top)) 16px 16px; }
+  header { display: flex; align-items: center; justify-content: center; margin: 4px 0 18px; background: #fff; border-radius: 20px;
+    padding: 12px 16px; box-shadow: var(--sh); }
+  header .logo { height: 72px; width: auto; max-width: 86%; display: block; }
   .ic { width: 20px; height: 20px; flex: 0 0 auto; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; vertical-align: -4px; }
-  .badge-ic { width: 52px; height: 52px; border-radius: 14px; display: flex; align-items: center; justify-content: center; flex: 0 0 52px; }
+  .badge-ic { width: 56px; height: 56px; border-radius: 16px; display: flex; align-items: center; justify-content: center; flex: 0 0 56px; color: #fff; }
   .badge-ic .ic { width: 28px; height: 28px; }
-  .buy .badge-ic { background: #e8effd; color: var(--p2); }
-  .sell .badge-ic { background: #fdf1e2; color: var(--or); }
-  .h-ic { display: inline-flex; width: 34px; height: 34px; border-radius: 10px; align-items: center; justify-content: center; vertical-align: -8px; margin-right: 8px; }
-  .h-ic.buy { background: #e8effd; color: var(--p2); } .h-ic.sell { background: #fdf1e2; color: var(--or); }
-  .okc { width: 76px; height: 76px; border-radius: 50%; background: #e7f6ec; color: var(--ok); display: flex; align-items: center; justify-content: center; margin: 4px auto 10px; }
-  .okc .ic { width: 42px; height: 42px; stroke-width: 2.4; }
-  .card { background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 18px; box-shadow: 0 6px 18px rgba(20,40,80,.05); margin-bottom: 14px; }
-  h1 { font-size: 22px; margin: 0 0 6px; line-height: 1.3; }
-  p.lead { margin: 0 0 14px; color: var(--mut); }
+  .buy .badge-ic { background: linear-gradient(135deg, var(--p3), var(--p)); box-shadow: 0 6px 14px rgba(45,91,208,.35); }
+  .sell .badge-ic { background: linear-gradient(135deg, var(--or2), var(--or)); box-shadow: 0 6px 14px rgba(217,119,6,.35); }
+  .h-ic { display: inline-flex; width: 38px; height: 38px; border-radius: 12px; align-items: center; justify-content: center; vertical-align: -9px; margin-right: 10px; color: #fff; }
+  .h-ic.buy { background: linear-gradient(135deg, var(--p3), var(--p)); } .h-ic.sell { background: linear-gradient(135deg, var(--or2), var(--or)); }
+  .okc { width: 84px; height: 84px; border-radius: 50%; background: linear-gradient(135deg, #34c76f, var(--ok)); color: #fff; display: flex; align-items: center; justify-content: center;
+    margin: 6px auto 12px; box-shadow: 0 0 0 10px #e3f6ea, 0 10px 24px rgba(27,122,61,.35); animation: pop .5s cubic-bezier(.2,1.4,.4,1) both; }
+  .okc .ic { width: 44px; height: 44px; stroke-width: 2.6; }
+  .card { background: #fff; border-radius: 22px; padding: 22px 20px; box-shadow: var(--sh); margin-bottom: 16px; animation: rise .35s ease-out both; }
+  h1 { font-size: 24px; margin: 0 0 6px; line-height: 1.25; letter-spacing: -.2px; }
+  p.lead { margin: 0 0 16px; color: var(--mut); }
+  .trust { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 18px; padding: 0; list-style: none; }
+  .trust li { display: inline-flex; align-items: center; gap: 6px; background: #f1f5ff; color: var(--p); border-radius: 999px; padding: 5px 12px; font-size: 13px; font-weight: 600; }
+  .trust li .ic { width: 15px; height: 15px; stroke-width: 2.6; }
   .choice { display: grid; gap: 12px; }
-  .choice button { display: flex; align-items: center; gap: 14px; width: 100%; text-align: left; border: 2px solid var(--line); background: #fff;
-    border-radius: 14px; padding: 16px; font-size: 18px; font-weight: 700; cursor: pointer; color: var(--ink); }
-  .choice button small { display: block; font-weight: 400; color: var(--mut); font-size: 14px; }
-  .choice .buy:hover, .choice .buy:focus { border-color: var(--p2); background: #f2f6ff; }
-  .choice .sell:hover, .choice .sell:focus { border-color: var(--or); background: #fff8ef; }
-  label.f { display: block; margin: 0 0 12px; }
-  label.f > span { display: block; font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+  .choice button { display: flex; align-items: center; gap: 14px; width: 100%; text-align: left; border: 1.5px solid var(--line); background: #fff;
+    border-radius: 18px; padding: 16px; font-size: 18px; font-weight: 700; cursor: pointer; color: var(--ink);
+    transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease, background .15s ease; }
+  .choice button > span:nth-child(2) { flex: 1 1 auto; }
+  .choice button::after { content: "\203A"; font-size: 30px; line-height: 1; color: #b4bfd3; font-weight: 400; transition: transform .15s ease, color .15s ease; }
+  .choice button small { display: block; font-weight: 400; color: var(--mut); font-size: 14px; margin-top: 2px; }
+  .choice button:hover, .choice button:focus-visible { transform: translateY(-2px); box-shadow: var(--sh); outline: none; }
+  .choice button:hover::after, .choice button:focus-visible::after { transform: translateX(3px); }
+  .choice .buy:hover, .choice .buy:focus-visible { border-color: var(--p2); background: #f6f9ff; }
+  .choice .buy:hover::after, .choice .buy:focus-visible::after { color: var(--p2); }
+  .choice .sell:hover, .choice .sell:focus-visible { border-color: var(--or); background: #fffaf2; }
+  .choice .sell:hover::after, .choice .sell:focus-visible::after { color: var(--or); }
+  .how { margin: 20px 0 4px; border-top: 1px solid var(--line); padding-top: 16px; }
+  .how h2 { font-size: 15px; margin: 0 0 12px; color: var(--p); }
+  .how ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+  .how li { display: flex; gap: 12px; align-items: center; font-size: 14px; color: var(--ink); }
+  .how li b { flex: 0 0 28px; height: 28px; border-radius: 50%; background: #eef3ff; color: var(--p); display: flex; align-items: center; justify-content: center; font-size: 14px; }
+  label.f { display: block; margin: 0 0 14px; }
+  label.f > span { display: block; font-size: 14px; font-weight: 600; margin-bottom: 6px; color: #2a3446; }
   label.f > span em { font-style: normal; color: var(--bad); }
   label.f > span i { font-style: normal; font-weight: 400; color: var(--mut); }
-  input, select, textarea { width: 100%; font: inherit; font-size: 16px; padding: 11px 12px; border: 1px solid var(--line); border-radius: 10px; background: #fff; color: var(--ink); }
-  input:focus, select:focus, textarea:focus { outline: none; border-color: var(--p2); box-shadow: 0 0 0 3px rgba(45,91,208,.15); }
-  textarea { min-height: 70px; resize: vertical; }
-  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  .sec { font-weight: 700; color: var(--p); margin: 6px 0 10px; font-size: 15px; border-bottom: 1px solid var(--line); padding-bottom: 4px; }
-  .check { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; margin: 6px 0 12px; }
-  .check input { width: 22px; height: 22px; flex: 0 0 22px; margin-top: 1px; }
-  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 0; border-radius: 12px; padding: 13px 18px;
-    font: inherit; font-weight: 700; cursor: pointer; background: #e8edf6; color: var(--ink); text-decoration: none; }
-  .btn.pri { background: var(--p); color: #fff; width: 100%; font-size: 17px; }
-  .btn.wa { background: #1faa53; color: #fff; width: 100%; font-size: 17px; }
+  input, select, textarea { width: 100%; font: inherit; font-size: 16px; padding: 12px 14px; border: 1.5px solid var(--line); border-radius: 12px; background: #fbfcfe; color: var(--ink);
+    transition: border-color .15s ease, box-shadow .15s ease, background .15s ease; }
+  input:hover, select:hover, textarea:hover { border-color: #c5cfe0; }
+  input:focus, select:focus, textarea:focus { outline: none; background: #fff; border-color: var(--p2); box-shadow: 0 0 0 4px rgba(45,91,208,.14); }
+  textarea { min-height: 80px; resize: vertical; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .sec { display: flex; align-items: center; gap: 8px; font-weight: 700; color: var(--p); margin: 10px 0 12px; font-size: 15px; }
+  .sec::before { content: ""; width: 4px; height: 18px; border-radius: 4px; background: linear-gradient(var(--p3), var(--p)); }
+  .check { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; margin: 6px 0 14px; background: #f7f9fd; border-radius: 12px; padding: 10px 12px; }
+  .check input { width: 22px; height: 22px; flex: 0 0 22px; margin-top: 1px; accent-color: var(--p2); }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 0; border-radius: 14px; padding: 13px 18px;
+    font: inherit; font-weight: 700; cursor: pointer; background: #eef2f9; color: var(--ink); text-decoration: none; transition: transform .12s ease, box-shadow .12s ease, filter .12s ease; }
+  .btn:hover { filter: brightness(.98); }
+  .btn:active { transform: translateY(1px); }
+  .btn.pri { background: linear-gradient(135deg, var(--p2), var(--p)); color: #fff; width: 100%; font-size: 17px; padding: 15px 18px; box-shadow: 0 8px 18px rgba(29,63,143,.30); }
+  .btn.pri:hover { box-shadow: 0 10px 22px rgba(29,63,143,.38); filter: none; }
+  .btn.wa { background: linear-gradient(135deg, #25d366, #1faa53); color: #fff; width: 100%; font-size: 17px; padding: 15px 18px; box-shadow: 0 8px 18px rgba(31,170,83,.30); }
   .btn:disabled { opacity: .6; cursor: wait; }
-  .top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
   .top .back { margin-bottom: 0; }
-  .lang { background: #eef3ff; color: var(--p); border: 0; border-radius: 8px; padding: 5px 12px; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
+  .lang { background: #eef3ff; color: var(--p); border: 0; border-radius: 999px; padding: 6px 14px; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
+  .lang:hover { background: #e2eaff; }
   .pe-auto { background: #e7f6ec; color: #14532d; border-radius: 10px; padding: 8px 10px; margin: 6px 0; font-size: 14px; }
   .back { display: inline-flex; align-items: center; gap: 6px; background: none; border: 0; color: var(--p); font: inherit; font-weight: 600; cursor: pointer; padding: 0; margin-bottom: 8px; }
   .back .ic { width: 18px; height: 18px; }
-  .err { color: var(--bad); font-size: 14px; min-height: 20px; margin: 4px 0 8px; }
+  .err { color: var(--bad); font-size: 14px; min-height: 20px; margin: 4px 0 8px; font-weight: 600; }
   .hp { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
-  .photos { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; }
-  .photos .ph { position: relative; width: 88px; height: 66px; border-radius: 8px; background: #ddd center/cover; }
-  .photos .ph button { position: absolute; top: -6px; right: -6px; width: 24px; height: 24px; border-radius: 50%; border: 0; background: var(--bad); color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; }
-  .photos .ph button .ic { width: 14px; height: 14px; stroke-width: 3; }
+  .photos { display: flex; flex-wrap: wrap; gap: 10px; margin: 8px 0; }
+  .photos .ph { position: relative; width: 92px; height: 70px; border-radius: 12px; background: #ddd center/cover; box-shadow: 0 3px 8px rgba(0,0,0,.12); }
+  .photos .ph button { position: absolute; top: -6px; right: -6px; width: 24px; height: 24px; border-radius: 50%; border: 2px solid #fff; background: var(--bad); color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; }
+  .photos .ph button .ic { width: 12px; height: 12px; stroke-width: 3; }
+  #ph_add { border: 1.5px dashed #b9c6de; background: #f7f9fd; color: var(--p); width: 100%; }
   .muted { color: var(--mut); font-size: 13px; }
-  .about { display: flex; gap: 10px; align-items: center; background: #eef3ff; color: var(--p); border-radius: 12px; padding: 10px 12px; margin: 4px 0 12px; font-size: 14px; }
+  .about { display: flex; gap: 10px; align-items: center; background: #eef3ff; color: var(--p); border-radius: 14px; padding: 12px 14px; margin: 4px 0 14px; font-size: 14px; }
   .done { text-align: center; }
-  .ref { display: inline-block; background: #eef3ff; color: var(--p); font-weight: 800; font-size: 20px; padding: 6px 16px; border-radius: 10px; margin: 6px 0 12px; }
-  .foot { text-align: center; font-size: 12px; color: var(--mut); margin: 18px 0 30px; }
+  .ref { display: inline-block; background: #eef3ff; color: var(--p); font-weight: 800; font-size: 22px; letter-spacing: 1px; padding: 8px 20px; border-radius: 12px; margin: 6px 0 12px; border: 1.5px dashed #b9c9f5; }
+  .foot { display: flex; align-items: center; justify-content: center; gap: 6px; text-align: center; font-size: 12px; color: var(--mut); margin: 6px 0 30px; }
+  .foot .ic { width: 14px; height: 14px; }
   .spin { width: 18px; height: 18px; border: 3px solid rgba(255,255,255,.5); border-top-color: #fff; border-radius: 50%; animation: s .8s linear infinite; }
   @keyframes s { to { transform: rotate(360deg); } }
+  @keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+  @keyframes pop { from { opacity: 0; transform: scale(.6); } to { opacity: 1; transform: none; } }
+  @media (prefers-reduced-motion: reduce) { .card, .okc { animation: none; } .choice button, .btn { transition: none; } }
   /* number-plate blur editor */
   .pe-back { position: fixed; inset: 0; background: rgba(10,16,24,.86); z-index: 50; display: flex; align-items: center; justify-content: center; padding: 10px; }
   .pe { background: #fff; border-radius: 14px; padding: 14px; max-width: 760px; width: 100%; max-height: 96vh; overflow: auto; }
@@ -181,7 +215,7 @@
   var T = {
     en: {
       title: 'Want to buy or sell a vehicle?',
-      lead: 'Give us a few details — one of our agents will call you. Free for buyers.',
+      lead: 'Send us your details here and we will contact you shortly. Free for buyers.',
       buy: 'I want to buy a vehicle', buyS: 'We will find the vehicle you are looking for',
       sell: 'I want to sell my vehicle', sellS: 'We will find a buyer for your vehicle',
       aboutV: 'Enquiry about vehicle', aboutB: 'Your offer for the wanted request', showroom: 'Browse vehicles for sale',
@@ -213,13 +247,15 @@
       pe_auto: 'The number plate was blurred automatically. Please check — if it is wrong, press Undo and draw a box over the plate.',
       pe_none: 'Could not find the number plate — draw a box over it with your finger.',
       foot: 'Your details are kept safe and used only to contact you.',
+      tr1: 'Free for buyers', tr2: 'An agent calls you soon', tr3: 'All of Sri Lanka',
+      howT: 'How it works', how1: 'Tell us what you want to buy or sell', how2: 'An agent calls you to confirm the details', how3: 'We match buyers and sellers for you',
       sellQT: 'We will sell your vehicle for you', sellQL: 'Give us your vehicle details — your officer will find a buyer and call you.',
       quickT: 'We will find the right vehicle for you', quickL: 'Tell us what you want — your officer will call you with matching vehicles. Free.',
       other: 'සිංහල'
     },
     si: {
       title: 'වාහනයක් ගන්න හෝ විකුණන්න ඕනෑද?',
-      lead: 'විස්තර කිහිපයක් දෙන්න — අපේ නියෝජිතයෙක් ඔබට කතා කරයි. ගන්න අයට නොමිලේ.',
+      lead: 'ඔබේ විස්තර මෙතැනින් එවන්න — අපි ඉක්මනින් ඔබට කතා කරන්නම්. ගැනුම්කරුවන්ට නොමිලේ.',
       buy: 'මට වාහනයක් ගන්න ඕනෑ', buyS: 'ඔබ හොයන වාහනය අපි හොයලා දෙන්නම්',
       sell: 'මගේ වාහනය විකුණන්න ඕනෑ', sellS: 'ඔබේ වාහනයට ගැනුම්කරුවෙක් හොයලා දෙන්නම්',
       showroom: 'විකිණීමට ඇති වාහන බලන්න',
@@ -244,6 +280,8 @@
       waMsg: function (ref, name) { return 'ආයුබෝවන්, මම ' + name + '. මම VehicleHub එකට request එකක් යැව්වා. යොමු අංකය: ' + ref; },
       again: 'තවත් request එකක් යවන්න',
       foot: 'ඔබේ විස්තර ආරක්ෂිතයි. ඔබව සම්බන්ධ කරගන්න විතරයි පාවිච්චි කරන්නේ.',
+      tr1: 'ගන්න අයට නොමිලේ', tr2: 'ඉක්මනින් කතා කරනවා', tr3: 'මුළු ලංකාවටම',
+      howT: 'වැඩ කරන විදිහ', how1: 'ගන්න හෝ විකුණන්න ඕන වාහනය ගැන කියන්න', how2: 'නියෝජිතයෙක් ඔබට කතා කරලා විස්තර තහවුරු කරගන්නවා', how3: 'අපි ගැනුම්කරුවන් සහ විකුණුම්කරුවන් ගළපලා දෙනවා',
       quickT: 'ඔබට ගැලපෙන වාහනය අපි හොයලා දෙන්නම්', quickL: 'ඔබට ඕනෑ දේ කියන්න — ගැලපෙන වාහන එක්ක ඔබේ නිලධාරියා ඔබට කතා කරයි. නොමිලේ.',
       sellQT: 'ඔබේ වාහනය අපි විකුණලා දෙන්නම්', sellQL: 'ඔබේ වාහනයේ විස්තර දෙන්න — ගැනුම්කරුවෙක් හොයලා ඔබේ නිලධාරියා ඔබට කතා කරයි.',
       year: 'නිෂ්පාදිත අවුරුද්ද', price: 'බලාපොරොත්තු මිල (ලක්ෂ)',
@@ -270,7 +308,8 @@
     x: '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>',
     undo: '<polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>',
     send: '<line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>',
-    plus: '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>'
+    plus: '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>',
+    lock: '<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>'
   };
   function ic(n) { return '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">' + (ICONS[n] || '') + '</svg>'; }
 
@@ -279,10 +318,12 @@
     state.type = ''; state.done = null;
     $('app').innerHTML =
       '<div class="card"><h1>' + t('title') + '</h1><p class="lead">' + t('lead') + '</p>' +
+      '<ul class="trust"><li>' + ic('check') + t('tr1') + '</li><li>' + ic('check') + t('tr2') + '</li><li>' + ic('check') + t('tr3') + '</li></ul>' +
       '<div class="choice">' +
       '<button type="button" class="buy" id="c_buy"><span class="badge-ic">' + ic('search') + '</span><span>' + t('buy') + '<small>' + t('buyS') + '</small></span></button>' +
       '<button type="button" class="sell" id="c_sell"><span class="badge-ic">' + ic('car') + '</span><span>' + t('sell') + '<small>' + t('sellS') + '</small></span></button>' +
-      '</div><a class="btn" href="vehicles.html" style="width:100%;margin-top:12px">' + ic('car') + ' ' + t('showroom') + '</a></div>';
+      '</div><a class="btn" href="vehicles.html" style="width:100%;margin-top:12px">' + ic('car') + ' ' + t('showroom') + '</a>' +
+      '<div class="how"><h2>' + t('howT') + '</h2><ol><li><b>1</b>' + t('how1') + '</li><li><b>2</b>' + t('how2') + '</li><li><b>3</b>' + t('how3') + '</li></ol></div></div>';
     $('c_buy').onclick = function () { state.type = 'buyer'; renderForm(); window.scrollTo(0, 0); };
     $('c_sell').onclick = function () { state.type = 'seller'; renderForm(); window.scrollTo(0, 0); };
   }
@@ -410,7 +451,7 @@
       '</form></div>';
     $('app').innerHTML = h;
     if ($('f_back')) $('f_back').onclick = function () { state.photos = []; renderStart(); };
-    $('f_lang').onclick = function () { var keep = readForm(); lang = lang === 'si' ? 'en' : 'si'; $('foot').textContent = t('foot'); renderForm(); fillForm(keep); };
+    $('f_lang').onclick = function () { var keep = readForm(); lang = lang === 'si' ? 'en' : 'si'; $('foot').innerHTML = ic('lock') + '<span>' + esc(t('foot')) + '</span>'; renderForm(); fillForm(keep); };
     $('f').onsubmit = submit;
     wireVehicle();
     if (!buyer) {
