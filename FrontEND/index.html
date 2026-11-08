@@ -1105,12 +1105,14 @@ async function doLogin(e) {
   catch (ex) { /* not a MasterCAL login: try VehicleHub's own below */ }
   if (mcTok) {
     const r = await mcSession(mcTok);
-    netEnd();
-    if (!r.token) { $('lg_err').textContent = r.error; btn.disabled = false; return; }
-    S.token = r.token; store('vm_token', r.token);
-    const init = await call('init');
-    if (init) applyInit(init); else btn.disabled = false;
-    return;
+    if (r.token) {
+      netEnd();
+      S.token = r.token; store('vm_token', r.token);
+      const init = await call('init');
+      if (init) applyInit(init); else btn.disabled = false;
+      return;
+    }
+    // MasterCAL no longer exposes the old whoami bridge; try VehicleHub's own account login below.
   }
   google.script.run
     .withSuccessHandler(async r => {
