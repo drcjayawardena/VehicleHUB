@@ -34,6 +34,12 @@
   .th canvas { width: 100%; height: 100%; display: block; object-fit: cover; }
   .th .tag { position: absolute; left: 4px; bottom: 4px; background: rgba(0,0,0,.65); color: #fff; font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 9px; }
   .th .tag.c { background: var(--am); color: #1b1300; }
+  .th .ed { position: absolute; right: 4px; bottom: 4px; border: 0; border-radius: 9px; background: #dc2626; color: #fff; font-size: 11px; font-weight: 700; padding: 3px 8px; cursor: pointer; }
+  .pe { position: fixed; inset: 0; z-index: 99; background: rgba(2,6,23,.94); display: flex; flex-direction: column; align-items: center; padding: 12px; gap: 10px; }
+  .pe p { color: #e2e8f0; font-size: 14px; text-align: center; margin: 0; max-width: 700px; }
+  .pe .box { flex: 1; min-height: 0; width: 100%; display: flex; align-items: center; justify-content: center; }
+  .pe canvas { max-width: 100%; max-height: 100%; touch-action: none; cursor: crosshair; border-radius: 8px; }
+  .pe .row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
   .th .x { position: absolute; right: 4px; top: 4px; width: 24px; height: 24px; border-radius: 50%; border: 0; background: rgba(0,0,0,.65); color: #fff; font-size: 14px; line-height: 1; cursor: pointer; }
   .chk { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-weight: 600; }
   .chk input { width: 18px; height: 18px; }
@@ -93,7 +99,7 @@
     <input type="file" id="file" accept="image/*" multiple hidden>
     <div class="thumbs" id="thumbs"></div>
     <label class="chk"><input type="checkbox" id="hidePlate" checked> Hide number plates automatically / අංක පුවරුව සඟවන්න</label>
-    <p class="hint">Tap a photo to make it the cover (orange border). Number plates are blurred on your phone/computer — photos are never uploaded anywhere.</p>
+    <p class="hint">Tap a photo to make it the cover (orange border). Number plates are blurred on your phone/computer — if the box is wrong or missing, tap ✎ Plate on the photo and draw it yourself — photos are never uploaded anywhere.</p>
   </section>
 
   <section class="card">
@@ -165,10 +171,10 @@
   var FONT = '"Segoe UI", system-ui, -apple-system, "Noto Sans Sinhala", "Iskoola Pota", Roboto, Arial, sans-serif';
 
   var FORMATS = [
-    { id: 'square',   w: 1080, h: 1080, name: 'Square 1:1',        use: 'Instagram & Facebook feed, WhatsApp Business', safeT: 0,   safeB: 0,   maxHL: 0, rows: 1 },
-    { id: 'portrait', w: 1080, h: 1350, name: 'Portrait 4:5',      use: 'Instagram & Facebook feed — biggest on phones', safeT: 0,   safeB: 0,   maxHL: 3, rows: 2 },
-    { id: 'story',    w: 1080, h: 1920, name: 'Story / Reels 9:16', use: 'Instagram & Facebook Stories/Reels, TikTok, WhatsApp Status', safeT: 230, safeB: 340, maxHL: 3, rows: 2 },
-    { id: 'wide',     w: 1200, h: 630,  name: 'Wide 1.91:1',       use: 'Facebook post / link, WhatsApp Business', safeT: 0, safeB: 0, maxHL: 0, rows: 2 }
+    { id: 'square',   w: 1080, h: 1080, name: 'Instagram + Facebook Post (Square 1:1)', fname: 'Instagram-Facebook-Post-Square', use: 'Instagram & Facebook feed, WhatsApp Business', safeT: 0,   safeB: 0,   maxHL: 0, rows: 1 },
+    { id: 'portrait', w: 1080, h: 1350, name: 'Instagram + Facebook Post (Portrait 4:5)', fname: 'Instagram-Facebook-Post-Portrait', use: 'Instagram & Facebook feed — biggest on phones', safeT: 0,   safeB: 0,   maxHL: 3, rows: 2 },
+    { id: 'story',    w: 1080, h: 1920, name: 'Story / Reels — Instagram, Facebook, TikTok, WhatsApp Status', fname: 'Story-Reels-Instagram-Facebook-TikTok-WhatsApp-Status', use: 'Instagram & Facebook Stories/Reels, TikTok, WhatsApp Status', safeT: 230, safeB: 340, maxHL: 3, rows: 2 },
+    { id: 'wide',     w: 1200, h: 630,  name: 'Facebook Link Post / WhatsApp Business (Wide 1.91:1)', fname: 'Facebook-Link-WhatsApp-Business-Wide', use: 'Facebook post / link, WhatsApp Business', safeT: 0, safeB: 0, maxHL: 0, rows: 2 }
   ];
 
   // ---------- small helpers ----------
@@ -216,7 +222,7 @@
     c.width = Math.max(1, Math.round(img.naturalWidth * k)); c.height = Math.max(1, Math.round(img.naturalHeight * k));
     c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
     var boxes = [];
-    if (src === 'upload') { try { boxes = window.findPlates ? window.findPlates(c) : []; } catch (e) { boxes = []; } }
+    if (src === 'upload') { try { boxes = (window.findPlates ? window.findPlates(c) : []).filter(function (b) { var r = b.w / b.h; return r >= 1.4 && r <= 8 && b.w <= c.width * 0.3 && b.h <= c.height * 0.14; }); } catch (e) { boxes = []; } }
     S.photos.push({ canvas: c, boxes: boxes, src: src });
   }
   async function addFiles(files) {
@@ -243,11 +249,14 @@
       cx.drawImage(p.canvas, (208 - w) / 2, (156 - h) / 2, w, h);
       d.appendChild(c);
       var tag = document.createElement('span'); tag.className = 'tag' + (i === S.cover ? ' c' : '');
-      tag.textContent = i === S.cover ? 'COVER' : (p.boxes.length ? '🔒 plate' : String(i + 1));
+      tag.textContent = i === S.cover ? 'COVER' : (p.boxes.length ? '🔒 plate hidden' : String(i + 1));
       d.appendChild(tag);
       var x = document.createElement('button'); x.type = 'button'; x.className = 'x'; x.textContent = '×'; x.setAttribute('aria-label', 'Remove photo');
       x.onclick = function (e) { e.stopPropagation(); S.photos.splice(i, 1); if (S.cover > i) S.cover--; renderThumbs(); };
       d.appendChild(x);
+      var ed = document.createElement('button'); ed.type = 'button'; ed.className = 'ed'; ed.textContent = '✎ Plate';
+      ed.setAttribute('aria-label', 'Mark number plate'); ed.onclick = function (e) { e.stopPropagation(); plateEditor(i); };
+      d.appendChild(ed);
       d.onclick = function () { S.cover = i; renderThumbs(); };
       box.appendChild(d);
     });
@@ -262,6 +271,33 @@
     t.width = Math.max(1, Math.ceil(w / block)); t.height = Math.max(1, Math.ceil(h / block));
     t.getContext('2d').drawImage(ctx.canvas, x, y, w, h, 0, 0, t.width, t.height);
     ctx.save(); ctx.imageSmoothingEnabled = false; ctx.drawImage(t, 0, 0, t.width, t.height, x, y, w, h); ctx.restore();
+  }
+  /** Full-screen editor: draw a box over each number plate (drag), tap a red box to remove it. */
+  function plateEditor(idx) {
+    var p = S.photos[idx], boxes = p.boxes.map(function (b) { return { x: b.x, y: b.y, w: b.w, h: b.h }; });
+    var ov = document.createElement('div'); ov.className = 'pe';
+    ov.innerHTML = '<p><b>අංක පුවරුව මත drag කරන්න / Drag a box over the number plate.</b><br>Tap a red box to remove it.</p><div class="box"><canvas></canvas></div><div class="row"></div>';
+    var cv = ov.querySelector('canvas'), W = p.canvas.width, H = p.canvas.height; cv.width = W; cv.height = H;
+    var cx = cv.getContext('2d'), drag = null;
+    function draw() {
+      cx.drawImage(p.canvas, 0, 0);
+      cx.lineWidth = Math.max(3, W / 300); cx.strokeStyle = '#ef4444'; cx.fillStyle = 'rgba(239,68,68,.28)';
+      boxes.concat(drag ? [drag] : []).forEach(function (b) { cx.fillRect(b.x, b.y, b.w, b.h); cx.strokeRect(b.x, b.y, b.w, b.h); });
+    }
+    function pt(e) { var r = cv.getBoundingClientRect(); return { x: (e.clientX - r.left) * W / r.width, y: (e.clientY - r.top) * H / r.height }; }
+    cv.onpointerdown = function (e) { cv.setPointerCapture(e.pointerId); var q = pt(e); drag = { x: q.x, y: q.y, w: 0, h: 0, sx: q.x, sy: q.y }; };
+    cv.onpointermove = function (e) { if (!drag) return; var q = pt(e); drag.x = Math.min(q.x, drag.sx); drag.y = Math.min(q.y, drag.sy); drag.w = Math.abs(q.x - drag.sx); drag.h = Math.abs(q.y - drag.sy); draw(); };
+    cv.onpointerup = function (e) {
+      if (!drag) return; var d = drag; drag = null;
+      if (d.w > W * 0.015 && d.h > H * 0.01) boxes.push({ x: d.x, y: d.y, w: d.w, h: d.h });
+      else { var q = pt(e); boxes = boxes.filter(function (b) { return !(q.x >= b.x && q.x <= b.x + b.w && q.y >= b.y && q.y <= b.y + b.h); }); }
+      draw();
+    };
+    function btn(t, cls, fn) { var b = document.createElement('button'); b.type = 'button'; b.className = 'btn ' + cls; b.textContent = t; b.onclick = fn; ov.querySelector('.row').appendChild(b); }
+    btn('✔ Save', 'pri', function () { p.boxes = boxes; ov.remove(); renderThumbs(); });
+    btn('Clear all', '', function () { boxes = []; draw(); });
+    btn('Cancel', '', function () { ov.remove(); });
+    document.body.appendChild(ov); draw();
   }
   function workingPhoto(p) {
     var c = document.createElement('canvas'); c.width = p.canvas.width; c.height = p.canvas.height;
@@ -641,13 +677,13 @@
       var cov = workingPhoto(S.photos[S.cover]);
       for (var i = 0; i < FORMATS.length; i++) {
         var f = FORMATS[i]; if (!$('f_' + f.id).checked) continue;
-        out.push({ key: f.id, label: f.name, use: f.use, canvas: renderAd(f, cov, d, o), file: base + '-' + f.id + '.jpg' }); await tick();
+        out.push({ key: f.id, label: f.name, use: f.use, canvas: renderAd(f, cov, d, o), file: base + '-' + (i + 1) + '-' + f.fname + '.jpg' }); await tick();
       }
       if ($('f_carousel').checked) {
         var n = 0;
         for (var j = 0; j < S.photos.length; j++) {
           if (j === S.cover) continue; n++;
-          out.push({ key: 'slide', label: 'Photo slide ' + (n + 1), use: 'Carousel — Instagram & Facebook (swipe)', canvas: renderSlide(workingPhoto(S.photos[j]), d, o), file: base + '-slide' + (n + 1) + '.jpg' }); await tick();
+          out.push({ key: 'slide', label: 'Carousel slide ' + (n + 1) + ' — Instagram + Facebook', use: 'Post after the main image, as a swipe carousel', canvas: renderSlide(workingPhoto(S.photos[j]), d, o), file: base + '-' + (FORMATS.length + n) + '-Carousel-Instagram-Facebook-Slide' + (n + 1) + '.jpg' }); await tick();
         }
       }
       if (!out.length) { toast('Tick at least one format'); return; }
