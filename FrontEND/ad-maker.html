@@ -139,6 +139,7 @@
       <label class="opt"><input type="checkbox" id="f_portrait" checked> Portrait 4:5</label>
       <label class="opt"><input type="checkbox" id="f_story" checked> Story / Reels 9:16</label>
       <label class="opt"><input type="checkbox" id="f_wide" checked> Wide 1.91:1</label>
+      <label class="opt"><input type="checkbox" id="f_collage" checked> Photo collage (Facebook)</label>
       <label class="opt"><input type="checkbox" id="f_carousel" checked> Extra photo slides</label>
     </div>
   </section>
@@ -171,7 +172,7 @@
   var $ = function (id) { return document.getElementById(id); };
   var MAXP = 8;
   var S = { photos: [], cover: 0, out: [], data: null };
-  var FONT = '"Segoe UI", system-ui, -apple-system, "Noto Sans Sinhala", "Iskoola Pota", Roboto, Arial, sans-serif';
+  var FONT = '"Segoe UI", "Nirmala UI", system-ui, -apple-system, "Noto Sans Sinhala", "Iskoola Pota", Roboto, Arial, sans-serif';
 
   var FORMATS = [
     { id: 'square',   w: 1080, h: 1080, name: 'Instagram + Facebook Post (Square 1:1)', fname: 'Instagram-Facebook-Post-Square', use: 'Instagram & Facebook feed, WhatsApp Business', safeT: 0,   safeB: 0,   maxHL: 0, rows: 1 },
@@ -191,6 +192,7 @@
   var num = function (n) { return Number(n).toLocaleString('en-US'); };
   var rs = function (lakhs) { return 'Rs. ' + num(Math.round(Number(lakhs) * 100000)); };
   var lk = function (l) { var n = Math.round(Number(l) * 100) / 100; return Number.isInteger(n) ? String(n) : n.toFixed(2).replace(/0$/, ''); };
+  var priceText = function (d) { return has(d.price) ? 'ලක්ෂ ' + lk(d.price) + '/=' : 'Call for price'; };
   var tick = function () { return new Promise(function (r) { setTimeout(r, 0); }); };
   function fmtPhone(p) {
     var d = String(p || '').replace(/\D/g, '');
@@ -365,7 +367,7 @@
     return w;
   }
   function pricePill(x, px, py, h, d, o, maxW) {
-    var txt = has(d.price) ? rs(d.price) : 'Call for price';
+    var txt = priceText(d);
     var s = fitFont(x, txt, 800, h * 0.62, 24, maxW - h * 0.8);
     var w = x.measureText(txt).width + h * 0.8;
     x.save(); x.shadowColor = 'rgba(0,0,0,.3)'; x.shadowBlur = 14; x.shadowOffsetY = 4;
@@ -500,13 +502,43 @@
     if (f.id === 'wide') wideLayout(x, f, photo, d, o); else if (o.theme === 'bright') brightLayout(x, f, photo, d, o); else darkLayout(x, f, photo, d, o);
     return c;
   }
+  /** Facebook-style photo grid (1 big + small ones, "+N" on the last) with a price / phone footer. */
+  function renderCollage(photos, d, o) {
+    var W = 1080, H = 1350, FH = 190, g = 6, PH = H - FH, c = document.createElement('canvas'); c.width = W; c.height = H;
+    var x = c.getContext('2d'); x.textBaseline = 'alphabetic'; x.fillStyle = '#070e22'; x.fillRect(0, 0, W, H);
+    var n = Math.min(photos.length, 5), cells = [], hw = (W - g) / 2, tw = (W - g * 2) / 3;
+    if (n === 1) cells = [[0, 0, W, PH]];
+    else if (n === 2) cells = [[0, 0, W, (PH - g) / 2], [0, (PH - g) / 2 + g, W, (PH - g) / 2]];
+    else if (n === 3) { var t3 = Math.round(PH * 0.62); cells = [[0, 0, W, t3], [0, t3 + g, hw, PH - t3 - g], [hw + g, t3 + g, hw, PH - t3 - g]]; }
+    else if (n === 4) { var t4 = Math.round(PH * 0.64); cells = [[0, 0, W, t4]]; for (var a = 0; a < 3; a++) cells.push([a * (tw + g), t4 + g, tw, PH - t4 - g]); }
+    else { var t5 = Math.round(PH * 0.56); cells = [[0, 0, hw, t5], [hw + g, 0, hw, t5]]; for (var b = 0; b < 3; b++) cells.push([b * (tw + g), t5 + g, tw, PH - t5 - g]); }
+    cells.forEach(function (r, i) { x.save(); x.beginPath(); x.rect(r[0], r[1], r[2], r[3]); x.clip(); cover(x, photos[i], r[0], r[1], r[2], r[3], 0.5); x.restore(); });
+    if (photos.length > 5) {
+      var l = cells[4]; x.fillStyle = 'rgba(0,0,0,.5)'; x.fillRect(l[0], l[1], l[2], l[3]);
+      font(x, 800, 96); x.fillStyle = '#fff'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('+' + (photos.length - 5), l[0] + l[2] / 2, l[1] + l[3] / 2); x.textAlign = 'left'; x.textBaseline = 'alphabetic';
+    }
+    var m = 36, fy = PH + g, ph = fmtPhone(d.phone), bw = ph ? 330 : 0;
+    x.fillStyle = '#0b1530'; x.fillRect(0, PH, W, FH);
+    var mw = W - m * 2 - (bw ? bw + 24 : 0);
+    fitFont(x, (d.title || '').toUpperCase(), 800, 44, 28, mw); x.fillStyle = '#fff'; x.fillText(ellipsize(x, (d.title || '').toUpperCase(), mw), m, fy + 54);
+    fitFont(x, priceText(d), 800, 58, 30, mw); x.fillStyle = o.accent; x.fillText(priceText(d), m, fy + 118);
+    var sub = has(d.down) ? 'මූලික ගෙවීම – ලක්ෂ ' + lk(d.down) + ' ක් පමණි' : [d.district, d.owner].filter(Boolean).join(' • ');
+    if (sub) { fitFont(x, sub, 600, 28, 18, mw); x.fillStyle = 'rgba(255,255,255,.85)'; x.fillText(sub, m, fy + 160); }
+    if (bw) {
+      var bx = W - m - bw, bh = 120, by = PH + (FH - bh) / 2;
+      x.fillStyle = '#1faa53'; rr(x, bx, by, bw, bh, 22); x.fill(); x.textBaseline = 'middle'; x.textAlign = 'center';
+      font(x, 700, 20); x.fillStyle = 'rgba(255,255,255,.9)'; x.fillText('📞 අමතන්න / WhatsApp', bx + bw / 2, by + 34);
+      fitFont(x, ph, 800, 40, 24, bw - 24); x.fillStyle = '#fff'; x.fillText(ph, bx + bw / 2, by + 80); x.textAlign = 'left'; x.textBaseline = 'alphabetic';
+    }
+    return c;
+  }
   function renderSlide(photo, d, o) {
     var W = 1080, H = 1350, m = 56, c = document.createElement('canvas'); c.width = W; c.height = H;
     var x = c.getContext('2d'); cover(x, photo, 0, 0, W, H, 0.5);
     var g = x.createLinearGradient(0, H * 0.74, 0, H); g.addColorStop(0, 'rgba(7,14,34,0)'); g.addColorStop(1, 'rgba(7,14,34,.9)'); x.fillStyle = g; x.fillRect(0, H * 0.74, W, H * 0.26);
     badge(x, W - m - 48, H - m - 48, 96);
     var maxW = W - m * 2 - 130;
-    var pt = has(d.price) ? rs(d.price) : 'Call for price';
+    var pt = priceText(d);
     fitFont(x, d.title, 800, 54, 36, maxW); x.fillStyle = '#fff'; x.fillText(ellipsize(x, d.title, maxW), m, H - m - 52);
     fitFont(x, pt, 800, 46, 28, maxW); x.fillStyle = o.accent; x.fillText(pt, m, H - m - 4);
     return c;
@@ -712,11 +744,15 @@
         var f = FORMATS[i]; if (!$('f_' + f.id).checked) continue;
         out.push({ key: f.id, label: f.name, use: f.use, canvas: renderAd(f, cov, d, o), file: base + '-' + (i + 1) + '-' + f.fname + '.jpg' }); await tick();
       }
+      if ($('f_collage').checked) {
+        var order = [S.cover].concat(S.photos.map(function (_, k) { return k; }).filter(function (k) { return k !== S.cover; }));
+        out.push({ key: 'collage', label: 'Facebook Photo Collage (Portrait 4:5)', use: 'Facebook post / groups / Marketplace — all photos in one image, like local car dealers', canvas: renderCollage(order.map(function (k) { return k === S.cover ? cov : workingPhoto(S.photos[k]); }), d, o), file: base + '-' + (FORMATS.length + 1) + '-Facebook-Photo-Collage.jpg' }); await tick();
+      }
       if ($('f_carousel').checked) {
         var n = 0;
         for (var j = 0; j < S.photos.length; j++) {
           if (j === S.cover) continue; n++;
-          out.push({ key: 'slide', label: 'Carousel slide ' + (n + 1) + ' — Instagram + Facebook', use: 'Post after the main image, as a swipe carousel', canvas: renderSlide(workingPhoto(S.photos[j]), d, o), file: base + '-' + (FORMATS.length + n) + '-Carousel-Instagram-Facebook-Slide' + (n + 1) + '.jpg' }); await tick();
+          out.push({ key: 'slide', label: 'Carousel slide ' + (n + 1) + ' — Instagram + Facebook', use: 'Post after the main image, as a swipe carousel', canvas: renderSlide(workingPhoto(S.photos[j]), d, o), file: base + '-' + (FORMATS.length + 1 + n) + '-Carousel-Instagram-Facebook-Slide' + (n + 1) + '.jpg' }); await tick();
         }
       }
       if (!out.length) { toast('Tick at least one format'); return; }
