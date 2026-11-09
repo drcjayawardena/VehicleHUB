@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#1d3f8f">
+<title>Ad Maker — VehicleHub</title>
+<link rel="icon" href="icon-192.png">
+<script src="config.js"></script>
+<script src="plate.js"></script>
+<style>
+  :root { --p:#1d3f8f; --p2:#2d5bd0; --ink:#172033; --mut:#5f6b7d; --bg:#f3f5f9; --line:#dde3ee; --card:#fff; --ok:#1b7a3d; --soft:#eef3ff; --am:#f59e0b; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans Sinhala", Arial, sans-serif; }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 0 16px; }
+  .top { background: #fff; border-bottom: 1px solid var(--line); }
+  .top .wrap { display: flex; align-items: center; gap: 12px; min-height: 64px; }
+  .brand { display: inline-flex; align-items: center; gap: 10px; font-weight: 800; font-size: 18px; color: var(--p); text-decoration: none; }
+  .brand img { width: 40px; height: 40px; border-radius: 50%; }
+  .brand span { color: var(--mut); font-weight: 600; font-size: 14px; }
+  h1 { font-size: 22px; margin: 18px 0 4px; }
+  .lead { color: var(--mut); margin: 0 0 14px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 16px; margin: 0 0 14px; }
+  .card h2 { font-size: 17px; margin: 0 0 10px; }
+  .card h2 small { color: var(--mut); font-weight: 500; margin-left: 6px; }
+  .hint { color: var(--mut); font-size: 13px; margin: 6px 0 0; }
+  .drop { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; border: 2px dashed #b9c6e4; background: var(--soft); border-radius: 14px; padding: 22px 12px; text-align: center; cursor: pointer; color: var(--p); font-weight: 700; }
+  .drop.over { background: #dfe9ff; border-color: var(--p2); }
+  .drop small { color: var(--mut); font-weight: 500; }
+  .thumbs { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 8px; margin-top: 10px; }
+  .th { position: relative; border-radius: 10px; overflow: hidden; border: 3px solid transparent; background: #0f172a; aspect-ratio: 4/3; cursor: pointer; }
+  .th.cover { border-color: var(--am); }
+  .th canvas { width: 100%; height: 100%; display: block; object-fit: cover; }
+  .th .tag { position: absolute; left: 4px; bottom: 4px; background: rgba(0,0,0,.65); color: #fff; font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 9px; }
+  .th .tag.c { background: var(--am); color: #1b1300; }
+  .th .x { position: absolute; right: 4px; top: 4px; width: 24px; height: 24px; border-radius: 50%; border: 0; background: rgba(0,0,0,.65); color: #fff; font-size: 14px; line-height: 1; cursor: pointer; }
+  .chk { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-weight: 600; }
+  .chk input { width: 18px; height: 18px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px; }
+  label.f { display: flex; flex-direction: column; gap: 3px; font-size: 13px; font-weight: 700; color: var(--mut); }
+  input[type=text], input[type=number], input[type=tel], select, textarea { font: inherit; color: var(--ink); background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 9px 10px; width: 100%; }
+  textarea { resize: vertical; min-height: 76px; }
+  input[type=color] { width: 100%; height: 40px; border: 1px solid var(--line); border-radius: 10px; padding: 2px; background: #fff; }
+  .row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .opt { display: inline-flex; align-items: center; gap: 6px; background: var(--soft); border-radius: 20px; padding: 6px 12px; font-weight: 600; font-size: 14px; }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; border: 0; border-radius: 12px; padding: 10px 16px; font: inherit; font-weight: 700; cursor: pointer; background: #e8edf6; color: var(--ink); text-decoration: none; }
+  .btn.pri { background: var(--p); color: #fff; }
+  .btn.go { background: var(--am); color: #1b1300; font-size: 18px; padding: 14px 20px; width: 100%; box-shadow: 0 6px 16px rgba(245,158,11,.35); }
+  .btn.wa { background: #1faa53; color: #fff; }
+  .btn.sm { padding: 7px 12px; font-size: 13px; border-radius: 10px; }
+  .btn[disabled] { opacity: .6; cursor: default; }
+  .out-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; }
+  .oc { border: 1px solid var(--line); border-radius: 14px; background: #fff; overflow: hidden; display: flex; flex-direction: column; }
+  .oc .pv { background: #0f172a; display: flex; align-items: center; justify-content: center; padding: 8px; }
+  .oc canvas { max-width: 100%; max-height: 360px; width: auto; height: auto; border-radius: 6px; }
+  .oc .bd { padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 4px; flex: 1; }
+  .oc b { font-size: 14px; }
+  .oc .use { color: var(--mut); font-size: 12px; flex: 1; }
+  .oc .acts { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
+  .cap { border: 1px solid var(--line); border-radius: 14px; padding: 12px; margin-bottom: 10px; background: #fff; }
+  .cap .hd { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; }
+  .cap .hd b { font-size: 15px; }
+  .cap .meta { color: var(--mut); font-size: 12px; }
+  .cap textarea { min-height: 160px; font-size: 14px; }
+  .cap .acts { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+  .bar { position: sticky; bottom: 0; background: rgba(243,245,249,.96); padding: 10px 0; display: flex; gap: 8px; flex-wrap: wrap; border-top: 1px solid var(--line); z-index: 5; }
+  .toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: #172033; color: #fff; padding: 10px 16px; border-radius: 12px; font-weight: 600; max-width: 92vw; z-index: 50; opacity: 0; pointer-events: none; transition: opacity .2s; }
+  .toast.on { opacity: 1; }
+  [hidden] { display: none !important; }
+  footer { color: var(--mut); font-size: 12px; padding: 14px 0 30px; }
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <a class="brand" href="vehicles.html"><img src="icon-192.png" alt=""> VehicleHub <span>Ad Maker</span></a>
+</div></header>
+
+<main class="wrap">
+  <h1>Social media ad maker <small style="color:var(--mut);font-weight:500;font-size:15px">සමාජ මාධ්‍ය දැන්වීම්</small></h1>
+  <p class="lead">Add photos, fill in the details and press one button — you get ready-made images and captions for Facebook, Instagram, TikTok and WhatsApp Business.</p>
+
+  <section class="card">
+    <h2>1 · Photos <small>පින්තූර</small></h2>
+    <div class="row" id="showroom" hidden style="margin-bottom:10px">
+      <select id="shList" style="flex:1;min-width:220px"><option value="">Load a vehicle from the showroom… / showroom එකෙන් තෝරන්න</option></select>
+      <button type="button" class="btn sm" id="shLoad">Load details + photos</button>
+    </div>
+    <label class="drop" id="drop" for="file">
+      <span>📷 Tap to add photos / පින්තූර එකතු කරන්න</span>
+      <small>or drop them here · up to 8 · the first photo is the cover</small>
+    </label>
+    <input type="file" id="file" accept="image/*" multiple hidden>
+    <div class="thumbs" id="thumbs"></div>
+    <label class="chk"><input type="checkbox" id="hidePlate" checked> Hide number plates automatically / අංක පුවරුව සඟවන්න</label>
+    <p class="hint">Tap a photo to make it the cover (orange border). Number plates are blurred on your phone/computer — photos are never uploaded anywhere.</p>
+  </section>
+
+  <section class="card">
+    <h2>2 · Vehicle details <small>විස්තර</small></h2>
+    <div class="grid">
+      <label class="f">Type<select id="type"><option>Car</option><option>SUV / Jeep</option><option>Van</option><option>Cab / Pickup</option><option>Motorcycle</option><option>Three-wheeler</option><option>Bus</option><option>Lorry / Truck</option><option>Other</option></select></label>
+      <label class="f">Make<input type="text" id="make" list="makes" placeholder="Toyota" autocomplete="off"></label>
+      <label class="f">Model<input type="text" id="model" placeholder="Aqua" autocomplete="off"></label>
+      <label class="f">Year<input type="number" id="year" inputmode="numeric" placeholder="2015" min="1950" max="2100"></label>
+      <label class="f">Price (Rs. Lakhs)<input type="number" id="price" inputmode="decimal" step="0.1" min="0" placeholder="34.5"></label>
+      <label class="f">District<input type="text" id="district" placeholder="Colombo" autocomplete="off"></label>
+      <label class="f">Mileage (km)<input type="number" id="mileage" inputmode="numeric" placeholder="85000"></label>
+      <label class="f">Fuel<select id="fuel"><option value="">—</option><option>Petrol</option><option>Diesel</option><option>Hybrid</option><option>Electric</option></select></label>
+      <label class="f">Transmission<select id="trans"><option value="">—</option><option>Auto</option><option>Manual</option></select></label>
+      <label class="f">Condition<select id="cond"><option value="">—</option><option>Registered (Used)</option><option>Unregistered (Recondition)</option><option>Brand New</option></select></label>
+      <label class="f">Colour<input type="text" id="color" placeholder="White" autocomplete="off"></label>
+      <label class="f">Call / WhatsApp number<input type="tel" id="phone" inputmode="tel" placeholder="0714100518"></label>
+      <label class="f">Reference ID (optional)<input type="text" id="vid" placeholder="V0007" autocomplete="off"></label>
+    </div>
+    <label class="f" style="margin-top:10px">Highlights — one per line, up to 4 / විශේෂාංග (පේළියකට එකක්)
+      <textarea id="hl" placeholder="Full option, first owner&#10;Original paint&#10;Leasing facility available"></textarea></label>
+    <datalist id="makes"><option>Toyota</option><option>Suzuki</option><option>Honda</option><option>Nissan</option><option>Mitsubishi</option><option>Mazda</option><option>Micro</option><option>Perodua</option><option>Daihatsu</option><option>Hyundai</option><option>Kia</option><option>Isuzu</option><option>Tata</option><option>Mahindra</option><option>Subaru</option><option>BMW</option><option>Mercedes-Benz</option><option>Audi</option><option>Land Rover</option><option>Bajaj</option><option>TVS</option><option>Hero</option><option>Yamaha</option></datalist>
+  </section>
+
+  <section class="card">
+    <h2>3 · Style <small>පෙනුම</small></h2>
+    <div class="grid">
+      <label class="f">Look<select id="theme"><option value="dark">Dark overlay (photo full screen)</option><option value="bright">Bright panel (white text box)</option></select></label>
+      <label class="f">Accent colour<input type="color" id="accent" value="#f59e0b"></label>
+      <label class="f">Caption language / භාෂාව<select id="lang"><option value="en">English</option><option value="si">සිංහල</option><option value="both">English + සිංහල</option></select></label>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <label class="opt"><input type="checkbox" id="f_square" checked> Square 1:1</label>
+      <label class="opt"><input type="checkbox" id="f_portrait" checked> Portrait 4:5</label>
+      <label class="opt"><input type="checkbox" id="f_story" checked> Story / Reels 9:16</label>
+      <label class="opt"><input type="checkbox" id="f_wide" checked> Wide 1.91:1</label>
+      <label class="opt"><input type="checkbox" id="f_carousel" checked> Extra photo slides</label>
+    </div>
+  </section>
+
+  <button type="button" class="btn go" id="go">✨ Create ads for all platforms / දැන්වීම් සාදන්න</button>
+
+  <section id="results" hidden style="margin-top:18px">
+    <div class="card">
+      <h2>Images <small>පින්තූර</small></h2>
+      <div class="out-grid" id="outGrid"></div>
+      <p class="hint" id="slideHint" hidden>Post the Portrait image first, then the extra photo slides as a carousel on Instagram / Facebook.</p>
+    </div>
+    <div class="card">
+      <h2>Captions <small>caption</small></h2>
+      <div id="caps"></div>
+    </div>
+    <div class="bar">
+      <button type="button" class="btn pri" id="zipAll">⬇ Download everything (.zip)</button>
+      <button type="button" class="btn wa" id="shareAll">📱 Share all to apps (phone)</button>
+    </div>
+  </section>
+
+  <footer>Posting directly to Facebook / Instagram / TikTok needs each platform's business approval, so this tool prepares everything and lets you post with one tap: on a phone use <b>Share</b>, on a computer use <b>Download</b> + <b>Copy caption</b>.</footer>
+</main>
+<div class="toast" id="toast"></div>
+
+<script>
+(function () {
+  'use strict';
+  var $ = function (id) { return document.getElementById(id); };
+  var MAXP = 8;
+  var S = { photos: [], cover: 0, out: [], data: null };
+  var FONT = '"Segoe UI", system-ui, -apple-system, "Noto Sans Sinhala", "Iskoola Pota", Roboto, Arial, sans-serif';
+
+  var FORMATS = [
+    { id: 'square',   w: 1080, h: 1080, name: 'Square 1:1',        use: 'Instagram & Facebook feed, WhatsApp Business', safeT: 0,   safeB: 0,   maxHL: 0, rows: 1 },
+    { id: 'portrait', w: 1080, h: 1350, name: 'Portrait 4:5',      use: 'Instagram & Facebook feed — biggest on phones', safeT: 0,   safeB: 0,   maxHL: 3, rows: 2 },
+    { id: 'story',    w: 1080, h: 1920, name: 'Story / Reels 9:16', use: 'Instagram & Facebook Stories/Reels, TikTok, WhatsApp Status', safeT: 230, safeB: 340, maxHL: 3, rows: 2 },
+    { id: 'wide',     w: 1200, h: 630,  name: 'Wide 1.91:1',       use: 'Facebook post / link, WhatsApp Business', safeT: 0, safeB: 0, maxHL: 0, rows: 2 }
+  ];
+
+  // ---------- small helpers ----------
+  var store = {
+    get: function (k) { try { return localStorage.getItem('vmad_' + k); } catch (e) { return null; } },
+    set: function (k, v) { try { localStorage.setItem('vmad_' + k, v); } catch (e) { /* ignore */ } }
+  };
+  var toastT;
+  function toast(msg) { var t = $('toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(function () { t.classList.remove('on'); }, 2600); }
+  var has = function (v) { return v !== '' && v != null; };
+  var num = function (n) { return Number(n).toLocaleString('en-US'); };
+  var rs = function (lakhs) { return 'Rs. ' + num(Math.round(Number(lakhs) * 100000)); };
+  var tick = function () { return new Promise(function (r) { setTimeout(r, 0); }); };
+  function fmtPhone(p) {
+    var d = String(p || '').replace(/\D/g, '');
+    if (d.indexOf('94') === 0 && d.length === 11) d = '0' + d.slice(2);
+    if (d.length === 9) d = '0' + d;
+    if (d.length === 10 && d[0] === '0') return d.slice(0, 3) + ' ' + d.slice(3, 6) + ' ' + d.slice(6);
+    return String(p || '').trim();
+  }
+  function slug(s) { return String(s || 'vehicle').replace(/[^A-Za-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'vehicle'; }
+  function siteBase() { return location.href.replace(/[#?].*$/, '').replace(/[^/]*$/, '').replace(/\/$/, ''); }
+
+  function getData() {
+    var make = $('make').value.trim(), model = $('model').value.trim(), year = $('year').value.trim();
+    var id = $('vid').value.trim().replace(/[^A-Za-z0-9_-]/g, '');
+    var hl = $('hl').value.split(/\n+/).map(function (s) { return s.trim(); }).filter(Boolean).slice(0, 4);
+    return {
+      type: $('type').value, make: make, model: model, year: year,
+      title: [make, model, year].filter(Boolean).join(' '),
+      price: $('price').value.trim(), district: $('district').value.trim(), mileage: $('mileage').value.trim(),
+      fuel: $('fuel').value, transmission: $('trans').value, condition: $('cond').value, color: $('color').value.trim(),
+      phone: $('phone').value.trim(), id: id, highlights: hl,
+      link: id ? siteBase() + '/v/' + id + '.html' : siteBase() + '/vehicles.html'
+    };
+  }
+
+  // ---------- photos ----------
+  function loadImg(src) {
+    return new Promise(function (res, rej) { var i = new Image(); i.onload = function () { res(i); }; i.onerror = function () { rej(new Error('image')); }; i.src = src; });
+  }
+  function addPhotoFromImg(img, src) {
+    var k = Math.min(1, 2000 / Math.max(img.naturalWidth, img.naturalHeight));
+    var c = document.createElement('canvas');
+    c.width = Math.max(1, Math.round(img.naturalWidth * k)); c.height = Math.max(1, Math.round(img.naturalHeight * k));
+    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+    var boxes = [];
+    if (src === 'upload') { try { boxes = window.findPlates ? window.findPlates(c) : []; } catch (e) { boxes = []; } }
+    S.photos.push({ canvas: c, boxes: boxes, src: src });
+  }
+  async function addFiles(files) {
+    var bad = 0;
+    for (var i = 0; i < files.length; i++) {
+      var f = files[i];
+      if (S.photos.length >= MAXP) { toast('Up to ' + MAXP + ' photos'); break; }
+      if (!/^image\//.test(f.type)) { bad++; continue; }
+      var url = URL.createObjectURL(f);
+      try { addPhotoFromImg(await loadImg(url), 'upload'); } catch (e) { bad++; }
+      URL.revokeObjectURL(url);
+      await tick();
+    }
+    if (bad) toast(bad + ' file(s) could not be read (try JPG or PNG)');
+    renderThumbs();
+  }
+  function renderThumbs() {
+    var box = $('thumbs'); box.innerHTML = '';
+    if (S.cover >= S.photos.length) S.cover = 0;
+    S.photos.forEach(function (p, i) {
+      var d = document.createElement('div'); d.className = 'th' + (i === S.cover ? ' cover' : '');
+      var c = document.createElement('canvas'); c.width = 208; c.height = 156;
+      var cx = c.getContext('2d'), k = Math.max(208 / p.canvas.width, 156 / p.canvas.height), w = p.canvas.width * k, h = p.canvas.height * k;
+      cx.drawImage(p.canvas, (208 - w) / 2, (156 - h) / 2, w, h);
+      d.appendChild(c);
+      var tag = document.createElement('span'); tag.className = 'tag' + (i === S.cover ? ' c' : '');
+      tag.textContent = i === S.cover ? 'COVER' : (p.boxes.length ? '🔒 plate' : String(i + 1));
+      d.appendChild(tag);
+      var x = document.createElement('button'); x.type = 'button'; x.className = 'x'; x.textContent = '×'; x.setAttribute('aria-label', 'Remove photo');
+      x.onclick = function (e) { e.stopPropagation(); S.photos.splice(i, 1); if (S.cover > i) S.cover--; renderThumbs(); };
+      d.appendChild(x);
+      d.onclick = function () { S.cover = i; renderThumbs(); };
+      box.appendChild(d);
+    });
+  }
+  /** Mosaic over a box — irreversible once saved as JPEG (same method as the officer app). */
+  function pixelate(ctx, b) {
+    var x = Math.max(0, Math.round(b.x)), y = Math.max(0, Math.round(b.y));
+    var w = Math.min(ctx.canvas.width - x, Math.round(b.w)), h = Math.min(ctx.canvas.height - y, Math.round(b.h));
+    if (w < 2 || h < 2) return;
+    var block = Math.max(10, Math.round(Math.min(w, h) / 4));
+    var t = document.createElement('canvas');
+    t.width = Math.max(1, Math.ceil(w / block)); t.height = Math.max(1, Math.ceil(h / block));
+    t.getContext('2d').drawImage(ctx.canvas, x, y, w, h, 0, 0, t.width, t.height);
+    ctx.save(); ctx.imageSmoothingEnabled = false; ctx.drawImage(t, 0, 0, t.width, t.height, x, y, w, h); ctx.restore();
+  }
+  function workingPhoto(p) {
+    var c = document.createElement('canvas'); c.width = p.canvas.width; c.height = p.canvas.height;
+    var cx = c.getContext('2d'); cx.drawImage(p.canvas, 0, 0);
+    if ($('hidePlate').checked) p.boxes.forEach(function (b) {
+      var padX = b.w * 0.08, padY = b.h * 0.15;
+      pixelate(cx, { x: b.x - padX, y: b.y - padY, w: b.w + padX * 2, h: b.h + padY * 2 });
+    });
+    return c;
+  }
+
+  // ---------- canvas drawing ----------
+  var LOGO = new Image(); var logoReady = new Promise(function (r) { LOGO.onload = r; LOGO.onerror = r; }); LOGO.src = 'icon-192.png';
+
+  function rr(x, px, py, w, h, r) { x.beginPath(); x.moveTo(px + r, py); x.arcTo(px + w, py, px + w, py + h, r); x.arcTo(px + w, py + h, px, py + h, r); x.arcTo(px, py + h, px, py, r); x.arcTo(px, py, px + w, py, r); x.closePath(); }
+  function rrTop(x, px, py, w, h, r) { x.beginPath(); x.moveTo(px + r, py); x.arcTo(px + w, py, px + w, py + h, r); x.lineTo(px + w, py + h); x.lineTo(px, py + h); x.arcTo(px, py, px + w, py, r); x.closePath(); }
+  function cover(x, img, px, py, w, h, fy) {
+    var k = Math.max(w / img.width, h / img.height), sw = w / k, sh = h / k;
+    x.drawImage(img, (img.width - sw) / 2, (img.height - sh) * (fy == null ? 0.5 : fy), sw, sh, px, py, w, h);
+  }
+  function font(x, weight, size) { x.font = weight + ' ' + Math.round(size) + 'px ' + FONT; }
+  function fitFont(x, text, weight, max, min, maxW) { var s = max; for (; s > min; s -= 2) { font(x, weight, s); if (x.measureText(text).width <= maxW) break; } font(x, weight, s); return s; }
+  function wrapLines(x, text, maxW, maxLines) {
+    var words = String(text).split(/\s+/), lines = [], cur = '';
+    for (var i = 0; i < words.length; i++) {
+      var t = cur ? cur + ' ' + words[i] : words[i];
+      if (x.measureText(t).width <= maxW || !cur) cur = t; else { lines.push(cur); cur = words[i]; }
+    }
+    if (cur) lines.push(cur);
+    if (lines.length > maxLines) { lines = lines.slice(0, maxLines); lines[maxLines - 1] = lines[maxLines - 1].replace(/\s*\S*$/, '') + '…'; }
+    return lines;
+  }
+  /** One line if the title fits; otherwise up to two smaller lines (long names must never run off the ad). */
+  function titleBlock(x, text, maxW, maxSize, minSize) {
+    var s = fitFont(x, text, 800, maxSize, minSize, maxW);
+    if (x.measureText(text).width <= maxW) return { size: s, lines: [text], lh: s };
+    s = Math.min(Math.round(maxSize * 0.72), 66); font(x, 800, s);
+    return { size: s, lines: wrapLines(x, text, maxW, 2), lh: Math.round(s * 1.12) };
+  }
+  function ellipsize(x, text, maxW) {
+    if (x.measureText(text).width <= maxW) return text;
+    var t = text; while (t.length > 3 && x.measureText(t + '…').width > maxW) t = t.slice(0, -1);
+    return t.replace(/\s+$/, '') + '…';
+  }
+  function onAccent(hex) {
+    var m = /^#?([0-9a-f]{6})$/i.exec(hex || ''); if (!m) return '#1b1300';
+    var n = parseInt(m[1], 16), r = n >> 16, g = (n >> 8) & 255, b = n & 255;
+    return (0.299 * r + 0.587 * g + 0.114 * b) > 150 ? '#1b1300' : '#ffffff';
+  }
+  function badge(x, cx, cy, d) { // round white logo badge
+    x.save(); x.shadowColor = 'rgba(0,0,0,.35)'; x.shadowBlur = d * 0.12; x.shadowOffsetY = d * 0.03;
+    x.fillStyle = '#fff'; x.beginPath(); x.arc(cx, cy, d / 2, 0, Math.PI * 2); x.fill(); x.restore();
+    x.save(); x.beginPath(); x.arc(cx, cy, d / 2 - 2, 0, Math.PI * 2); x.clip();
+    if (LOGO.naturalWidth) x.drawImage(LOGO, cx - d / 2, cy - d / 2, d, d);
+    x.restore();
+  }
+  function chip(x, px, py, h, text, bg, fg, size, weight) {
+    font(x, weight || 700, size); var w = x.measureText(text).width + h * 0.9;
+    x.fillStyle = bg; rr(x, px, py, w, h, h / 2); x.fill();
+    x.fillStyle = fg; x.textBaseline = 'middle'; x.fillText(text, px + h * 0.45, py + h / 2 + 1); x.textBaseline = 'alphabetic';
+    return w;
+  }
+  function pricePill(x, px, py, h, d, o, maxW) {
+    var txt = has(d.price) ? rs(d.price) : 'Call for price';
+    var s = fitFont(x, txt, 800, h * 0.62, 24, maxW - h * 0.8);
+    var w = x.measureText(txt).width + h * 0.8;
+    x.save(); x.shadowColor = 'rgba(0,0,0,.3)'; x.shadowBlur = 14; x.shadowOffsetY = 4;
+    x.fillStyle = o.accent; rr(x, px, py, w, h, h * 0.3); x.fill(); x.restore();
+    x.fillStyle = onAccent(o.accent); x.textBaseline = 'middle'; x.fillText(txt, px + h * 0.4, py + h / 2 + 2); x.textBaseline = 'alphabetic';
+    return w;
+  }
+  function specItems(d) { return [d.district, d.fuel, d.transmission, has(d.mileage) ? num(d.mileage) + ' km' : '', d.color].filter(Boolean); }
+  function chipRows(x, items, size, h, maxW, maxRows) {
+    font(x, 600, size); var rows = [[]], cx = 0, gap = 10;
+    items.forEach(function (t) {
+      var w = x.measureText(t).width + h * 0.9;
+      if (cx + w > maxW && rows[rows.length - 1].length) { if (rows.length >= maxRows) return; rows.push([]); cx = 0; }
+      rows[rows.length - 1].push({ t: t, w: w }); cx += w + gap;
+    });
+    return rows;
+  }
+  function drawChipRows(x, rows, left, top, size, h, bg, fg) {
+    rows.forEach(function (r, ri) {
+      var cx = left, y = top + ri * (h + 10);
+      r.forEach(function (c) {
+        x.fillStyle = bg; rr(x, cx, y, c.w, h, h / 2); x.fill();
+        font(x, 600, size); x.fillStyle = fg; x.textBaseline = 'middle'; x.fillText(c.t, cx + h * 0.45, y + h / 2 + 1); x.textBaseline = 'alphabetic';
+        cx += c.w + 10;
+      });
+    });
+    return rows.length * h + (rows.length - 1) * 10;
+  }
+  function checkLine(x, px, midY, text, size, color, accent, maxW) {
+    var r = size * 0.42;
+    x.fillStyle = accent; x.beginPath(); x.arc(px + r, midY, r, 0, Math.PI * 2); x.fill();
+    x.strokeStyle = onAccent(accent); x.lineWidth = Math.max(2.5, size * 0.1); x.lineCap = 'round'; x.lineJoin = 'round';
+    x.beginPath(); x.moveTo(px + r * 0.5, midY + 1); x.lineTo(px + r * 0.9, midY + r * 0.42); x.lineTo(px + r * 1.55, midY - r * 0.42); x.stroke();
+    font(x, 600, size); x.fillStyle = color; x.textBaseline = 'middle';
+    var t = text; while (t.length > 4 && x.measureText(t).width > maxW - r * 2 - 14) t = t.slice(0, -2);
+    if (t !== text) t = t.replace(/\s+$/, '') + '…';
+    x.fillText(t, px + r * 2 + 14, midY + 1); x.textBaseline = 'alphabetic';
+  }
+  function ctaBar(x, bx, by, bw, bh, d) {
+    x.fillStyle = '#1faa53'; rr(x, bx, by, bw, bh, bh * 0.3); x.fill();
+    var ph = fmtPhone(d.phone), pad = bh * 0.28; x.textBaseline = 'middle';
+    var right = '';
+    if (d.id) { font(x, 700, bh * 0.21); right = 'Ref ' + d.id; }
+    var rw = right ? x.measureText(right).width : 0;
+    if (ph) {
+      font(x, 700, bh * 0.2); x.fillStyle = 'rgba(255,255,255,.88)'; x.fillText('CALL / WHATSAPP', bx + pad, by + bh * 0.30);
+      font(x, 800, bh * 0.4); x.fillStyle = '#fff';
+      var pw = x.measureText(ph).width;
+      x.fillText(ph, bx + pad, by + bh * 0.68);
+      if (right && pad + pw + 24 + rw + pad > bw) right = '';
+    } else {
+      font(x, 800, bh * 0.34); x.fillStyle = '#fff'; x.fillText('Message us on WhatsApp', bx + pad, by + bh / 2 + 1);
+    }
+    if (right) { font(x, 700, bh * 0.21); x.fillStyle = 'rgba(255,255,255,.9)'; x.textAlign = 'right'; x.fillText(right, bx + bw - pad, by + bh / 2 + 1); x.textAlign = 'left'; }
+    x.textBaseline = 'alphabetic';
+  }
+
+  function darkLayout(x, f, ph, d, o) {
+    var W = f.w, H = f.h, m = 64;
+    // The photo fills the upper part only, so the text block never covers the vehicle; it fades into deep navy below.
+    var photoH = Math.round(H * (f.id === 'story' ? 0.6 : f.id === 'square' ? 0.74 : 0.68));
+    x.fillStyle = '#070e22'; x.fillRect(0, 0, W, H);
+    cover(x, ph, 0, 0, W, photoH, 0.5);
+    var g = x.createLinearGradient(0, 0, 0, H * 0.22); g.addColorStop(0, 'rgba(0,0,0,.5)'); g.addColorStop(1, 'rgba(0,0,0,0)'); x.fillStyle = g; x.fillRect(0, 0, W, H * 0.22);
+    g = x.createLinearGradient(0, photoH * 0.62, 0, photoH + 2); g.addColorStop(0, 'rgba(7,14,34,0)'); g.addColorStop(1, 'rgba(7,14,34,1)'); x.fillStyle = g; x.fillRect(0, photoH * 0.62, W, photoH * 0.38 + 2);
+    var topY = Math.max(48, f.safeT);
+    badge(x, m + 62, topY + 62, 124);
+    if (d.condition) { font(x, 700, 28); var cw = x.measureText(d.condition).width + 44; chip(x, W - m - cw, topY + 30, 64, d.condition, 'rgba(0,0,0,.55)', '#fff', 28, 700); }
+    var bottomY = H - Math.max(56, f.safeB), ctaH = 112, ctaY = bottomY - ctaH, cur = ctaY - 34;
+    var n = Math.min(f.maxHL, d.highlights.length);
+    if (n) {
+      var top = cur - n * 52;
+      for (var i = 0; i < n; i++) checkLine(x, m, top + i * 52 + 26, d.highlights[i], 32, '#fff', o.accent, W - m * 2);
+      cur = top - 22;
+    }
+    var rows = chipRows(x, specItems(d), 30, 54, W - m * 2, f.rows);
+    if (rows[0].length) { var ch = rows.length * 54 + (rows.length - 1) * 10; drawChipRows(x, rows, m, cur - ch, 30, 54, 'rgba(255,255,255,.18)', '#fff'); cur -= ch + 26; }
+    var tb = titleBlock(x, d.title, W - m * 2, 96, 50);
+    x.save(); x.shadowColor = 'rgba(0,0,0,.55)'; x.shadowBlur = 14; x.fillStyle = '#fff';
+    tb.lines.forEach(function (l, i) { x.fillText(l, m, cur - 14 - (tb.lines.length - 1 - i) * tb.lh); });
+    x.restore();
+    cur -= (tb.lines.length - 1) * tb.lh + tb.size + 34;
+    pricePill(x, m, cur - 88, 88, d, o, W - m * 2);
+    ctaBar(x, m, ctaY, W - m * 2, ctaH, d);
+  }
+
+  function brightLayout(x, f, ph, d, o) {
+    var W = f.w, H = f.h, m = 64;
+    var panelTop = Math.round(H * (f.id === 'story' ? 0.5 : f.id === 'square' ? 0.52 : 0.58));
+    x.fillStyle = '#fff'; x.fillRect(0, 0, W, H);
+    cover(x, ph, 0, 0, W, panelTop + 60, 0.55);
+    var g = x.createLinearGradient(0, 0, 0, H * 0.2); g.addColorStop(0, 'rgba(0,0,0,.4)'); g.addColorStop(1, 'rgba(0,0,0,0)'); x.fillStyle = g; x.fillRect(0, 0, W, H * 0.2);
+    x.save(); x.shadowColor = 'rgba(0,0,0,.25)'; x.shadowBlur = 24; x.shadowOffsetY = -4; x.fillStyle = '#fff'; rrTop(x, 0, panelTop, W, H - panelTop, 48); x.fill(); x.restore();
+    var topY = Math.max(48, f.safeT);
+    badge(x, m + 62, topY + 62, 124);
+    if (d.condition) { font(x, 700, 28); var cw = x.measureText(d.condition).width + 44; chip(x, W - m - cw, topY + 30, 64, d.condition, 'rgba(0,0,0,.55)', '#fff', 28, 700); }
+    pricePill(x, m, panelTop - 44, 88, d, o, W - m * 2);
+    var bottomY = H - Math.max(52, f.safeB), ctaH = 112, ctaY = bottomY - ctaH;
+    var cur = panelTop + 44 + 28;
+    var tb = titleBlock(x, d.title, W - m * 2, 88, 48);
+    x.fillStyle = '#0f1f4d'; tb.lines.forEach(function (l, i) { x.fillText(l, m, cur + tb.size * 0.85 + i * tb.lh); });
+    cur += tb.size * 0.85 + (tb.lines.length - 1) * tb.lh + 26;
+    var rows = chipRows(x, specItems(d), 30, 54, W - m * 2, f.id === 'square' ? 1 : 2);
+    if (rows[0].length) { cur += drawChipRows(x, rows, m, cur, 30, 54, '#eef3ff', '#1d3f8f') + 20; }
+    var avail = ctaY - 24 - cur, n = Math.min(3, Math.floor(avail / 52), d.highlights.length);
+    for (var i = 0; i < n; i++) checkLine(x, m, cur + i * 52 + 26, d.highlights[i], 32, '#243049', o.accent, W - m * 2);
+    ctaBar(x, m, ctaY, W - m * 2, ctaH, d);
+  }
+
+  function wideLayout(x, f, ph, d, o) {
+    var W = f.w, H = f.h, photoW = 700, dark = o.theme !== 'bright';
+    x.fillStyle = dark ? '#0f1f4d' : '#ffffff'; x.fillRect(0, 0, W, H);
+    cover(x, ph, 0, 0, photoW, H, 0.55);
+    x.fillStyle = o.accent; x.fillRect(photoW, 0, 8, H);
+    if (d.condition) chip(x, 28, 28, 48, d.condition, 'rgba(0,0,0,.6)', '#fff', 22, 700);
+    var px = photoW + 8 + 36, pw = W - px - 36;
+    badge(x, px + 40, 62, 80);
+    font(x, 800, 44); var lines = wrapLines(x, d.title, pw, 2), ts = 44;
+    if (lines.length === 1) { ts = fitFont(x, d.title, 800, 48, 30, pw); }
+    x.fillStyle = dark ? '#fff' : '#0f1f4d';
+    var by = 160; lines.forEach(function (l, i) { x.fillText(l, px, by + i * (ts + 8)); });
+    var cy = by + (lines.length - 1) * (ts + 8) + 26;
+    pricePill(x, px, cy, 64, d, o, pw); cy += 64 + 18;
+    var rows = chipRows(x, specItems(d), 22, 40, pw, 2);
+    if (rows[0].length) drawChipRows(x, rows, px, cy, 22, 40, dark ? 'rgba(255,255,255,.14)' : '#eef3ff', dark ? '#fff' : '#1d3f8f');
+    ctaBar(x, px, H - 36 - 84, pw, 84, d);
+  }
+
+  function renderAd(f, photo, d, o) {
+    var c = document.createElement('canvas'); c.width = f.w; c.height = f.h;
+    var x = c.getContext('2d'); x.textBaseline = 'alphabetic';
+    if (f.id === 'wide') wideLayout(x, f, photo, d, o); else if (o.theme === 'bright') brightLayout(x, f, photo, d, o); else darkLayout(x, f, photo, d, o);
+    return c;
+  }
+  function renderSlide(photo, d, o) {
+    var W = 1080, H = 1350, m = 56, c = document.createElement('canvas'); c.width = W; c.height = H;
+    var x = c.getContext('2d'); cover(x, photo, 0, 0, W, H, 0.5);
+    var g = x.createLinearGradient(0, H * 0.74, 0, H); g.addColorStop(0, 'rgba(7,14,34,0)'); g.addColorStop(1, 'rgba(7,14,34,.9)'); x.fillStyle = g; x.fillRect(0, H * 0.74, W, H * 0.26);
+    badge(x, W - m - 48, H - m - 48, 96);
+    var maxW = W - m * 2 - 130;
+    var pt = has(d.price) ? rs(d.price) : 'Call for price';
+    fitFont(x, d.title, 800, 54, 36, maxW); x.fillStyle = '#fff'; x.fillText(ellipsize(x, d.title, maxW), m, H - m - 52);
+    fitFont(x, pt, 800, 46, 28, maxW); x.fillStyle = o.accent; x.fillText(pt, m, H - m - 4);
+    return c;
+  }
+
+  // ---------- captions ----------
+  function hashtags(d) {
+    var clean = function (s) { return String(s || '').replace(/[^A-Za-z0-9]/g, ''); };
+    var t = ['#VehicleHub', '#SriLanka'];
+    var mk = clean(d.make), md = clean(d.model), ds = clean(d.district);
+    if (mk && md && (mk + md).length <= 28) t.push('#' + mk + md);
+    if (mk) t.push('#' + mk + 'SriLanka');
+    if (ds) t.push('#' + ds);
+    var ty = d.type;
+    if (ty === 'Motorcycle') t.push('#BikesForSaleSL', '#MotorcycleSriLanka');
+    else if (ty === 'SUV / Jeep') t.push('#SUVSriLanka', '#JeepForSale');
+    else if (ty === 'Van') t.push('#VansForSale', '#VanSriLanka');
+    else if (ty === 'Cab / Pickup') t.push('#PickupSriLanka');
+    else if (ty === 'Three-wheeler') t.push('#ThreeWheelerSL');
+    else t.push('#CarsForSaleSL', '#UsedCarsSriLanka');
+    if (d.fuel === 'Hybrid') t.push('#HybridCars'); else if (d.fuel === 'Electric') t.push('#EVSriLanka');
+    t.push('#VehiclesForSaleSriLanka', '#BuyAndSellSL', '#SriLankaVehicles', '#LKA');
+    var seen = {}; return t.filter(function (h) { var k = h.toLowerCase(); if (seen[k] || h.length < 3) return false; seen[k] = 1; return true; });
+  }
+  function joinLines(a) {
+    var out = []; a.forEach(function (l) { if (l === null || l === false || l === undefined) return; if (l === '' && (!out.length || out[out.length - 1] === '')) return; out.push(l); });
+    while (out.length && out[out.length - 1] === '') out.pop(); return out.join('\n');
+  }
+  function buildCaptions(d, lang) {
+    var T = d.title || 'Vehicle', P = has(d.price) ? rs(d.price) : '', loc = d.district, ph = fmtPhone(d.phone), link = d.link;
+    var specs = [d.fuel, d.transmission, has(d.mileage) ? num(d.mileage) + ' km' : '', d.color, d.condition].filter(Boolean).join(' • ');
+    var hl = d.highlights, tags = hashtags(d), ref = d.id ? 'Ref: ' + d.id : '';
+    function body(L, kind) { // kind: ig | fb | wa
+      var b = kind === 'wa' ? function (s) { return '*' + s + '*'; } : function (s) { return s; };
+      if (L === 'si') return joinLines([
+        '🚗 ' + b('විකිණීමට ඇත! ' + T), P && '💰 ' + b('මිල: ' + P), loc && '📍 ' + loc, specs && '⚙️ ' + specs, '',
+        hl.length ? hl.map(function (h) { return '✅ ' + h; }).join('\n') : null, hl.length ? '' : null,
+        'VehicleHub නියෝජිතයෙකු හරහා ආරක්ෂිත, පහසු ගනුදෙනුවක්.',
+        ph && '📞 අමතන්න / WhatsApp: ' + ph,
+        link && (kind === 'fb' ? '👉 තවත් පින්තූර සහ විස්තර: ' : '🔗 ') + link, ref
+      ]);
+      return joinLines([
+        '🚗 ' + b(T + ' — now available!'), P && '💰 ' + b(P), loc && '📍 ' + loc, specs && '⚙️ ' + specs, '',
+        hl.length ? hl.map(function (h) { return '✅ ' + h; }).join('\n') : null, hl.length ? '' : null,
+        'Checked and handled by a VehicleHub agent — safe, hassle-free buying.',
+        ph && '📞 Call / WhatsApp: ' + ph,
+        link && (kind === 'fb' ? '👉 More photos & details: ' : '🔗 ') + link, ref
+      ]);
+    }
+    function mix(kind) { return lang === 'both' ? body('en', kind) + '\n\n— — —\n\n' + body('si', kind) : body(lang, kind); }
+    var ig = mix('ig') + '\n\n' + tags.slice(0, 15).join(' ');
+    var fb = mix('fb') + '\n\n' + tags.slice(0, 5).join(' ');
+    var wa = mix('wa');
+    function tt() {
+      var en = T + (loc ? ' in ' + loc : '') + ' for sale' + (P ? ' — ' + P : '') + ' 🚗🔥' + (ph ? ' WhatsApp ' + ph : '');
+      var si = 'විකිණීමට: ' + T + (P ? ' — ' + P : '') + (loc ? ' 📍' + loc : '') + ' 🚗' + (ph ? ' WhatsApp ' + ph : '');
+      var s = lang === 'si' ? si : lang === 'both' ? si + '\n' + en : en;
+      var tg = tags.slice(0, 5).join(' ');
+      if (lang !== 'both' && s.length > 150) s = s.slice(0, 147).replace(/\s+\S*$/, '') + '…';
+      return s + '\n' + tg;
+    }
+    return [
+      { key: 'ig', name: 'Instagram', note: 'Feed post / carousel / Reels. Links are not clickable in captions — put the link in your bio.', text: ig },
+      { key: 'fb', name: 'Facebook', note: 'Page post or Marketplace / groups. Facebook shows the vehicle page preview when you paste the link.', text: fb },
+      { key: 'tt', name: 'TikTok', note: 'Use the Story 9:16 image in Photo Mode, or as a slideshow. Short caption works best.', text: tt() },
+      { key: 'wa', name: 'WhatsApp Business', note: 'Message / Broadcast / Catalog description. Use the Story or Square image for Status.', text: wa }
+    ];
+  }
+
+  // ---------- results ----------
+  function blobOf(canvas) { return new Promise(function (res) { canvas.toBlob(res, 'image/jpeg', 0.92); }); }
+  function download(blob, name) {
+    var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+  }
+  async function shareItems(items, text) {
+    try {
+      var files = [];
+      for (var i = 0; i < items.length; i++) files.push(new File([await blobOf(items[i].canvas)], items[i].file, { type: 'image/jpeg' }));
+      if (navigator.canShare && navigator.canShare({ files: files })) { await navigator.share({ files: files, text: text || '' }); }
+      else toast('Sharing works on phones. Please use Download instead.');
+    } catch (e) { if (e && e.name !== 'AbortError') toast('Could not open share — use Download'); }
+  }
+  function copyText(t) {
+    var done = function () { toast('Copied ✓ / copy කළා'); };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(done, function () { fallbackCopy(t); done(); });
+    else { fallbackCopy(t); done(); }
+  }
+  function fallbackCopy(t) { var ta = document.createElement('textarea'); ta.value = t; ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); } catch (e) { /* ignore */ } ta.remove(); }
+
+  function renderResults() {
+    var grid = $('outGrid'); grid.innerHTML = '';
+    S.out.forEach(function (it) {
+      var card = document.createElement('div'); card.className = 'oc';
+      var pv = document.createElement('div'); pv.className = 'pv'; pv.appendChild(it.canvas); card.appendChild(pv);
+      var bd = document.createElement('div'); bd.className = 'bd';
+      bd.innerHTML = '<b></b><div class="use"></div><div class="acts"></div>';
+      bd.querySelector('b').textContent = it.label + ' · ' + it.canvas.width + '×' + it.canvas.height;
+      bd.querySelector('.use').textContent = it.use;
+      var a = bd.querySelector('.acts');
+      var b1 = document.createElement('button'); b1.type = 'button'; b1.className = 'btn sm pri'; b1.textContent = '⬇ Download';
+      b1.onclick = async function () { download(await blobOf(it.canvas), it.file); };
+      var b2 = document.createElement('button'); b2.type = 'button'; b2.className = 'btn sm'; b2.textContent = '📱 Share';
+      b2.onclick = function () { shareItems([it], currentCaption('fb')); };
+      a.appendChild(b1); a.appendChild(b2); card.appendChild(bd); grid.appendChild(card);
+    });
+    $('slideHint').hidden = !S.out.some(function (o) { return o.key === 'slide'; });
+    renderCaptions();
+    $('results').hidden = false;
+  }
+  var capCache = {};
+  function currentCaption(k) { var t = $('cap_' + k); return t ? t.value : (capCache[k] || ''); }
+  function renderCaptions() {
+    if (!S.data) return;
+    var box = $('caps'); box.innerHTML = '';
+    buildCaptions(S.data, $('lang').value).forEach(function (c) {
+      var el = document.createElement('div'); el.className = 'cap';
+      el.innerHTML = '<div class="hd"><b></b><span class="meta"></span></div><div class="meta" style="margin-bottom:6px"></div><textarea></textarea><div class="acts"></div>';
+      el.querySelector('b').textContent = c.name;
+      var ta = el.querySelector('textarea'); ta.id = 'cap_' + c.key; ta.value = c.text;
+      var cnt = el.querySelector('.hd .meta'); var upd = function () { cnt.textContent = ta.value.length + ' characters'; }; upd(); ta.oninput = upd;
+      el.querySelectorAll('.meta')[1].textContent = c.note;
+      var acts = el.querySelector('.acts');
+      var bc = document.createElement('button'); bc.type = 'button'; bc.className = 'btn sm pri'; bc.textContent = '📋 Copy caption'; bc.onclick = function () { copyText(ta.value); }; acts.appendChild(bc);
+      if (c.key === 'wa') {
+        var w = document.createElement('a'); w.className = 'btn sm wa'; w.target = '_blank'; w.rel = 'noopener'; w.textContent = 'Open WhatsApp with this text';
+        w.onclick = function () { w.href = 'https://wa.me/?text=' + encodeURIComponent(ta.value); }; w.href = 'https://wa.me/?text=' + encodeURIComponent(ta.value); acts.appendChild(w);
+      }
+      if (c.key === 'fb') {
+        var f = document.createElement('a'); f.className = 'btn sm'; f.target = '_blank'; f.rel = 'noopener'; f.textContent = 'Share link on Facebook';
+        f.href = 'https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(S.data.link); acts.appendChild(f);
+      }
+      box.appendChild(el);
+    });
+  }
+
+  // ---------- zip (store only, no library) ----------
+  var CRC = (function () {
+    var t = new Uint32Array(256); for (var n = 0; n < 256; n++) { var c = n; for (var k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; }
+    return function (b) { var c = 0xFFFFFFFF; for (var i = 0; i < b.length; i++) c = t[(c ^ b[i]) & 255] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; };
+  })();
+  function makeZip(files) {
+    var enc = new TextEncoder(), parts = [], cd = [], off = 0;
+    files.forEach(function (f) {
+      var nm = enc.encode(f.name), crc = CRC(f.data), sz = f.data.length;
+      var h = new DataView(new ArrayBuffer(30));
+      h.setUint32(0, 0x04034b50, true); h.setUint16(4, 20, true); h.setUint16(6, 0x0800, true); h.setUint16(12, 0x21, true);
+      h.setUint32(14, crc, true); h.setUint32(18, sz, true); h.setUint32(22, sz, true); h.setUint16(26, nm.length, true);
+      parts.push(new Uint8Array(h.buffer), nm, f.data);
+      var c = new DataView(new ArrayBuffer(46));
+      c.setUint32(0, 0x02014b50, true); c.setUint16(4, 20, true); c.setUint16(6, 20, true); c.setUint16(8, 0x0800, true); c.setUint16(14, 0x21, true);
+      c.setUint32(16, crc, true); c.setUint32(20, sz, true); c.setUint32(24, sz, true); c.setUint16(28, nm.length, true); c.setUint32(42, off, true);
+      cd.push(new Uint8Array(c.buffer), nm);
+      off += 30 + nm.length + sz;
+    });
+    var cdSize = cd.reduce(function (a, b) { return a + b.length; }, 0);
+    var e = new DataView(new ArrayBuffer(22));
+    e.setUint32(0, 0x06054b50, true); e.setUint16(8, files.length, true); e.setUint16(10, files.length, true); e.setUint32(12, cdSize, true); e.setUint32(16, off, true);
+    return new Blob(parts.concat(cd, [new Uint8Array(e.buffer)]), { type: 'application/zip' });
+  }
+
+  // ---------- generate ----------
+  async function generate() {
+    var d = getData();
+    if (!S.photos.length) { toast('Add at least one photo / පින්තූරයක් එකතු කරන්න'); $('drop').scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
+    if (!d.make && !d.model) { toast('Enter the make / model'); $('make').focus(); return; }
+    ['theme', 'accent', 'lang', 'phone', 'hidePlate'].forEach(function (k) { var el = $(k); store.set(k, el.type === 'checkbox' ? (el.checked ? '1' : '0') : el.value); });
+    var btn = $('go'); btn.disabled = true; var label = btn.textContent; btn.textContent = 'Creating… / සාදමින්…';
+    try {
+      await logoReady; await tick();
+      var o = { theme: $('theme').value, accent: $('accent').value }, base = slug(d.title) + (d.id ? '-' + d.id : ''), out = [];
+      var cov = workingPhoto(S.photos[S.cover]);
+      for (var i = 0; i < FORMATS.length; i++) {
+        var f = FORMATS[i]; if (!$('f_' + f.id).checked) continue;
+        out.push({ key: f.id, label: f.name, use: f.use, canvas: renderAd(f, cov, d, o), file: base + '-' + f.id + '.jpg' }); await tick();
+      }
+      if ($('f_carousel').checked) {
+        var n = 0;
+        for (var j = 0; j < S.photos.length; j++) {
+          if (j === S.cover) continue; n++;
+          out.push({ key: 'slide', label: 'Photo slide ' + (n + 1), use: 'Carousel — Instagram & Facebook (swipe)', canvas: renderSlide(workingPhoto(S.photos[j]), d, o), file: base + '-slide' + (n + 1) + '.jpg' }); await tick();
+        }
+      }
+      if (!out.length) { toast('Tick at least one format'); return; }
+      S.out = out; S.data = d; renderResults();
+      $('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } catch (e) { console.error(e); toast('Something went wrong: ' + (e && e.message || e)); }
+    finally { btn.disabled = false; btn.textContent = label; }
+  }
+
+  async function zipAll() {
+    if (!S.out.length) return;
+    var b = $('zipAll'); b.disabled = true;
+    try {
+      var files = [];
+      for (var i = 0; i < S.out.length; i++) files.push({ name: S.out[i].file, data: new Uint8Array(await (await blobOf(S.out[i].canvas)).arrayBuffer()) });
+      var txt = ['instagram', 'facebook', 'tiktok', 'whatsapp'];
+      var caps = buildCaptions(S.data, $('lang').value).map(function (c) { return '===== ' + c.name + ' =====\n' + currentCaption(c.key) + '\n'; }).join('\n');
+      files.push({ name: 'captions.txt', data: new TextEncoder().encode(caps) });
+      download(makeZip(files), 'VehicleHub-' + slug(S.data.title) + (S.data.id ? '-' + S.data.id : '') + '-ads.zip');
+    } finally { b.disabled = false; }
+  }
+
+  // ---------- showroom (optional prefill, public data only) ----------
+  var showroomList = [];
+  async function api(fn, args) {
+    var r = await fetch(window.VM_API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ fn: fn, args: args || [] }), redirect: 'follow' });
+    var j = await r.json(); if (!j || !j.ok) throw new Error((j && j.error) || 'API error'); return j.result;
+  }
+  async function initShowroom() {
+    if (!window.VM_API_URL) return;
+    try {
+      var data = await api('publicListings', []);
+      showroomList = (data && data.vehicles) || [];
+      if (data && data.contact && data.contact.phone && !$('phone').value) $('phone').value = data.contact.phone;
+      if (!showroomList.length) return;
+      var sel = $('shList');
+      showroomList.forEach(function (v, i) {
+        var o = document.createElement('option'); o.value = String(i);
+        o.textContent = v.id + ' · ' + [v.make, v.model, v.year].filter(Boolean).join(' ') + (has(v.price) ? ' · Rs ' + v.price + 'L' : '');
+        sel.appendChild(o);
+      });
+      $('showroom').hidden = false;
+    } catch (e) { /* offline or API down — manual entry still works */ }
+  }
+  async function loadShowroom() {
+    var v = showroomList[Number($('shList').value)]; if (!v) { toast('Pick a vehicle first'); return; }
+    var set = function (id, val) { $(id).value = has(val) ? val : ''; };
+    set('type', v.type); set('make', v.make); set('model', v.model); set('year', v.year); set('price', v.price); set('district', v.district);
+    set('mileage', v.mileage); set('fuel', v.fuel); set('trans', v.transmission); set('cond', v.condition); set('color', v.color); set('vid', v.id);
+    if (!has($('type').value)) $('type').value = 'Other';
+    var b = $('shLoad'); b.disabled = true; b.textContent = 'Loading photos…';
+    try {
+      if (v.photos > 0) {
+        var ids = (await api('publicPhotos', [v.id])).slice(0, MAXP), photos = [];
+        for (var i = 0; i < ids.length; i++) { try { photos.push(await loadImg(await api('publicPhoto', [v.id, ids[i]]))); } catch (e) { /* skip */ } }
+        if (photos.length) { S.photos = []; S.cover = 0; photos.forEach(function (im) { addPhotoFromImg(im, 'showroom'); }); renderThumbs(); }
+      }
+      toast('Loaded ' + v.id + ' ✓');
+    } catch (e) { toast('Could not load photos — details were filled in'); }
+    finally { b.disabled = false; b.textContent = 'Load details + photos'; }
+  }
+
+  // ---------- wire up ----------
+  $('file').addEventListener('change', function (e) { addFiles(Array.prototype.slice.call(e.target.files)); e.target.value = ''; });
+  var drop = $('drop');
+  ['dragenter', 'dragover'].forEach(function (ev) { drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.add('over'); }); });
+  ['dragleave', 'drop'].forEach(function (ev) { drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.remove('over'); }); });
+  drop.addEventListener('drop', function (e) { addFiles(Array.prototype.slice.call(e.dataTransfer.files)); });
+  $('go').addEventListener('click', generate);
+  $('zipAll').addEventListener('click', zipAll);
+  $('shareAll').addEventListener('click', function () { shareItems(S.out, currentCaption('fb')); });
+  $('shLoad').addEventListener('click', loadShowroom);
+  $('lang').addEventListener('change', function () { store.set('lang', $('lang').value); renderCaptions(); });
+  ['theme', 'accent', 'lang', 'phone'].forEach(function (k) { var v = store.get(k); if (v) $(k).value = v; });
+  var hp = store.get('hidePlate'); if (hp === '0') $('hidePlate').checked = false;
+  initShowroom();
+
+  // test hook (harmless in production)
+  window.__vmad = { S: S, generate: generate, buildCaptions: buildCaptions, getData: getData };
+})();
+</script>
+</body>
+</html>

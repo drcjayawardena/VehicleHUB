@@ -39,6 +39,12 @@
   it opens the old `#v=<id>` pop-up. Keep that fallback.
 - GitHub pauses scheduled workflows after 60 days without repo activity — re-enable under Actions if the hourly run stops.
 
+## Ad maker (social media)
+- `FrontEND/ad-maker.html` — single-file tool (no backend): upload photos or load from the showroom, one click makes ads for
+  Facebook/Instagram (square, portrait, story), WhatsApp status/TikTok (story) and a wide link image, plus captions (en/si) and hashtags.
+  Runs fully in the browser (canvas; `plate.js` blurs number plates). Share on phones, Download ZIP + Copy caption on desktop.
+  URL: https://drcjayawardena.github.io/VehicleHUB/ad-maker.html. Auto-posting to Meta/TikTok APIs is NOT built (needs app review).
+
 ## WhatsApp (Meta Cloud API, account "VehicleHUB Sri Lanka")
 Script properties (Apps Script → Project Settings). Never print or screenshot `WA_TOKEN`.
 | Property | Meaning |
