@@ -110,6 +110,9 @@
       <label class="f">Model<input type="text" id="model" placeholder="Aqua" autocomplete="off"></label>
       <label class="f">Year<input type="number" id="year" inputmode="numeric" placeholder="2015" min="1950" max="2100"></label>
       <label class="f">Price (Rs. Lakhs)<input type="number" id="price" inputmode="decimal" step="0.1" min="0" placeholder="34.5"></label>
+      <label class="f">Down payment (Rs. Lakhs) <small>මූලික ගෙවීම</small><input type="number" id="down" inputmode="decimal" step="0.1" min="0" placeholder="7.75"></label>
+      <label class="f">Owner <small>අයිතිකරු</small><select id="owner"><option value="">—</option><option>1st Owner</option><option>2nd Owner</option><option>3rd Owner</option><option>4th Owner</option></select></label>
+      <label class="f">Registered year<input type="number" id="regyear" inputmode="numeric" placeholder="2016" min="1950" max="2100"></label>
       <label class="f">District<input type="text" id="district" placeholder="Colombo" autocomplete="off"></label>
       <label class="f">Mileage (km)<input type="number" id="mileage" inputmode="numeric" placeholder="85000"></label>
       <label class="f">Fuel<select id="fuel"><option value="">—</option><option>Petrol</option><option>Diesel</option><option>Hybrid</option><option>Electric</option></select></label>
@@ -129,7 +132,7 @@
     <div class="grid">
       <label class="f">Look<select id="theme"><option value="dark">Dark overlay (photo full screen)</option><option value="bright">Bright panel (white text box)</option></select></label>
       <label class="f">Accent colour<input type="color" id="accent" value="#f59e0b"></label>
-      <label class="f">Caption language / භාෂාව<select id="lang"><option value="en">English</option><option value="si">සිංහල</option><option value="both">English + සිංහල</option></select></label>
+      <label class="f">Caption language / භාෂාව<select id="lang"><option value="sl">Sri Lanka ad style (සිංහල + English)</option><option value="en">English</option><option value="si">සිංහල</option><option value="both">English + සිංහල</option></select></label>
     </div>
     <div class="row" style="margin-top:10px">
       <label class="opt"><input type="checkbox" id="f_square" checked> Square 1:1</label>
@@ -187,6 +190,7 @@
   var has = function (v) { return v !== '' && v != null; };
   var num = function (n) { return Number(n).toLocaleString('en-US'); };
   var rs = function (lakhs) { return 'Rs. ' + num(Math.round(Number(lakhs) * 100000)); };
+  var lk = function (l) { var n = Math.round(Number(l) * 100) / 100; return Number.isInteger(n) ? String(n) : n.toFixed(2).replace(/0$/, ''); };
   var tick = function () { return new Promise(function (r) { setTimeout(r, 0); }); };
   function fmtPhone(p) {
     var d = String(p || '').replace(/\D/g, '');
@@ -207,7 +211,7 @@
       title: [make, model, year].filter(Boolean).join(' '),
       price: $('price').value.trim(), district: $('district').value.trim(), mileage: $('mileage').value.trim(),
       fuel: $('fuel').value, transmission: $('trans').value, condition: $('cond').value, color: $('color').value.trim(),
-      phone: $('phone').value.trim(), id: id, highlights: hl,
+      phone: $('phone').value.trim(), down: $('down').value.trim(), owner: $('owner').value, regyear: $('regyear').value.trim(), id: id, highlights: hl,
       link: id ? siteBase() + '/v/' + id + '.html' : siteBase() + '/vehicles.html'
     };
   }
@@ -369,7 +373,7 @@
     x.fillStyle = onAccent(o.accent); x.textBaseline = 'middle'; x.fillText(txt, px + h * 0.4, py + h / 2 + 2); x.textBaseline = 'alphabetic';
     return w;
   }
-  function specItems(d) { return [d.district, d.fuel, d.transmission, has(d.mileage) ? num(d.mileage) + ' km' : '', d.color].filter(Boolean); }
+  function specItems(d) { return [has(d.down) ? 'Down payment Rs. ' + lk(d.down) + ' lakhs' : '', d.district, d.fuel, d.transmission, has(d.mileage) ? num(d.mileage) + ' km' : '', d.owner, d.color].filter(Boolean); }
   function chipRows(x, items, size, h, maxW, maxRows) {
     font(x, 600, size); var rows = [[]], cx = 0, gap = 10;
     items.forEach(function (t) {
@@ -509,6 +513,14 @@
   }
 
   // ---------- captions ----------
+  function slTags(d) {
+    var clean = function (s) { return String(s || '').replace(/[^A-Za-z0-9]/g, ''); };
+    var mk = clean(d.make), md = clean(d.model), t = [];
+    if (mk && md && (mk + md).length <= 28) { t.push('#' + mk + md); if (d.year) t.push('#' + md + d.year); t.push('#' + mk + md + 'SriLanka'); }
+    else if (mk) t.push('#' + mk, '#' + mk + 'SriLanka');
+    t.push('#VehicleSaleSriLanka', '#CarsForSaleSriLanka', '#VehicleHub');
+    var seen = {}; return t.filter(function (h) { var k = h.toLowerCase(); if (seen[k] || h.length < 3) return false; seen[k] = 1; return true; }).slice(0, 5);
+  }
   function hashtags(d) {
     var clean = function (s) { return String(s || '').replace(/[^A-Za-z0-9]/g, ''); };
     var t = ['#VehicleHub', '#SriLanka'];
@@ -552,16 +564,37 @@
         link && (kind === 'fb' ? '👉 More photos & details: ' : '🔗 ') + link, ref
       ]);
     }
-    function mix(kind) { return lang === 'both' ? body('en', kind) + '\n\n— — —\n\n' + body('si', kind) : body(lang, kind); }
-    var ig = mix('ig') + '\n\n' + tags.slice(0, 15).join(' ');
-    var fb = mix('fb') + '\n\n' + tags.slice(0, 5).join(' ');
+    function slBody(kind) {
+      var phs = d.phone ? String(d.phone).replace(/\D/g, '') : '';
+      var ph0 = fmtPhone(d.phone).replace(/\s/g, '');
+      var title = (T || '').toUpperCase();
+      var wa = kind === 'wa' ? function (z) { return '*' + z + '*'; } : function (z) { return z; };
+      return joinLines([
+        has(d.price) ? wa('ලක්ෂ ' + lk(d.price) + '/=') : wa('මිල සඳහා අමතන්න'),
+        has(d.down) ? 'මූලික ගෙවීම – ලක්ෂ ' + lk(d.down) + ' ක් පමණි.' : null,
+        ph0 && '📞 අමතන්න – ' + ph0, '',
+        '🚗 ' + wa(title), '',
+        d.year && d.year + ' Manufactured',
+        has(d.regyear) ? d.regyear + ' Registered' : (d.condition && /Unreg/i.test(d.condition) ? 'Unregistered' : null),
+        d.owner, has(d.mileage) ? 'Mileage – ' + num(d.mileage) + ' KM' : null,
+        [d.fuel, d.transmission, d.color].filter(Boolean).join(' | ') || null,
+        hl.length ? '' : null, hl.length ? hl.map(function (h) { return '• ' + h; }).join('\n') : null,
+        d.district ? '' : null, d.district && '📍 ' + d.district,
+        link && kind === 'fb' ? '' : null, link && kind === 'fb' ? '👉 More photos / තවත් පින්තූර: ' + link : null,
+        ref ? '' : null, ref || null
+      ]);
+    }
+    function mix(kind) { if (lang === 'sl') return slBody(kind); return lang === 'both' ? body('en', kind) + '\n\n— — —\n\n' + body('si', kind) : body(lang, kind); }
+    var ig = mix('ig') + '\n\n' + (lang === 'sl' ? slTags(d).join(' ') : tags.slice(0, 15).join(' '));
+    var fb = mix('fb') + '\n\n' + (lang === 'sl' ? slTags(d).join(' ') : tags.slice(0, 5).join(' '));
     var wa = mix('wa');
     function tt() {
       var en = T + (loc ? ' in ' + loc : '') + ' for sale' + (P ? ' — ' + P : '') + ' 🚗🔥' + (ph ? ' WhatsApp ' + ph : '');
       var si = 'විකිණීමට: ' + T + (P ? ' — ' + P : '') + (loc ? ' 📍' + loc : '') + ' 🚗' + (ph ? ' WhatsApp ' + ph : '');
       var s = lang === 'si' ? si : lang === 'both' ? si + '\n' + en : en;
-      var tg = tags.slice(0, 5).join(' ');
-      if (lang !== 'both' && s.length > 150) s = s.slice(0, 147).replace(/\s+\S*$/, '') + '…';
+      if (lang === 'sl') s = (has(d.down) ? '🔥 ලක්ෂ ' + lk(d.down) + 'ක් ගෙවා අරන් යන්න\n' : '') + (ph ? '📞 අමතන්න ' + ph + '\n' : '') + (P ? '🚗 මුළු මුදල ලක්ෂ ' + lk(d.price) + '/=' : '🚗 ' + T);
+      var tg = (lang === 'sl' ? slTags(d) : tags).slice(0, 5).join(' ');
+      if (lang !== 'both' && lang !== 'sl' && s.length > 150) s = s.slice(0, 147).replace(/\s+\S*$/, '') + '…';
       return s + '\n' + tg;
     }
     return [
@@ -758,6 +791,7 @@
   $('shLoad').addEventListener('click', loadShowroom);
   $('lang').addEventListener('change', function () { store.set('lang', $('lang').value); renderCaptions(); });
   ['theme', 'accent', 'lang', 'phone'].forEach(function (k) { var v = store.get(k); if (v) $(k).value = v; });
+  if (!store.get('lang_v2')) { $('lang').value = 'sl'; store.set('lang', 'sl'); store.set('lang_v2', '1'); }
   var hp = store.get('hidePlate'); if (hp === '0') $('hidePlate').checked = false;
   initShowroom();
 
