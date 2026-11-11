@@ -174,7 +174,7 @@
         <select id="sort" aria-label="Sort"></select>
       </div>
       <div id="wantNote"></div>
-      <div class="grid" id="grid"></div>
+      <div class="grid" id="grid"><!--SEO-LIST-START--><!--SEO-LIST-END--></div>
       <div class="pager" id="pager"></div>
     </main>
   </div>
@@ -516,7 +516,9 @@
   }
 
   // ---------- start ----------
+  var STATIC_GRID = null;   // vehicle cards written into the HTML at build time (search engines / no-JS)
   async function load() {
+    if (STATIC_GRID === null) STATIC_GRID = $('grid').innerHTML;
     $('grid').innerHTML = '<div class="sk"></div><div class="sk"></div><div class="sk"></div><div class="sk"></div>';
     try {
       var res = await Promise.all([call('publicListings', []), loadBuilt()]);
@@ -525,6 +527,12 @@
       if (S.data.contact && S.data.contact.facebook) $('fFb').href = S.data.contact.facebook;
       fromHash();
     } catch (e) {
+      if (STATIC_GRID && STATIC_GRID.indexOf('class="card"') > -1) {
+        // live data unavailable: keep the build-time list instead of an error page
+        $('grid').innerHTML = STATIC_GRID;
+        $('count').textContent = 'Showing the latest saved list';
+        return;
+      }
       $('grid').innerHTML = '<div class="empty">Could not load vehicles. ' + esc(e.message) +
         '<br><br><button class="btn pri" type="button" id="retry">' + ic('refresh') + ' Try again</button></div>';
       $('retry').onclick = load;
