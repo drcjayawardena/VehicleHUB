@@ -8,6 +8,8 @@
  *   v/<vehicle_id>.html        one page per vehicle ticked "Show on website" (show_public = Yes)
  *   v/img/<vehicle_id>/*.jpg   its photos (Drive photos cannot be hot-linked, so they are copied)
  *   v/index.json               ids that have a page — vehicles.html uses it to link cards
+ *   vehicles.html              the list of vehicle cards (plain <a href="v/ID.html"> links) is written between the
+ *                              <!--SEO-LIST-START--> / <!--SEO-LIST-END--> markers, so crawlers see real content without JavaScript
  *   sitemap.xml, robots.txt
  *
  * No dependencies (Node 18+). Usage:
@@ -255,6 +257,26 @@ function sitemap(vehicles) {
       .concat(vehicles.map((v) => url(SITE + '/v/' + v.id + '.html', v.date))).join('\n') + '\n</urlset>\n';
 }
 
+// Static vehicle cards for vehicles.html (visible to crawlers without JavaScript; the page script replaces them with live data).
+function staticCards(vehicles, photoMap) {
+  return vehicles.slice().sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0)).map((v) => {
+    const f = (photoMap[v.id] || [])[0];
+    const sub = [v.year, v.condition, v.color, v.district].filter(has).join(' · ') || v.type || '';
+    return '<a class="card" data-id="' + esc(v.id) + '" href="v/' + esc(v.id) + '.html" aria-label="' + esc(vTitle(v)) + '">' +
+      '<div class="thumb' + (f ? ' loaded' : '') + '"' + (f ? ' style="background-image:url(\'v/img/' + esc(v.id) + '/' + esc(f) + '\')"' : '') + '></div>' +
+      '<div class="b"><div class="t">' + esc(vName(v)) + '</div><div class="s">' + esc(sub) + '</div>' +
+      (has(v.price) ? '<div class="pr">' + esc(rs(v.price)) + '</div>' : '') + '</div></a>';
+  }).join('');
+}
+
+function injectVehicleList(file, html) {
+  let src;
+  try { src = fs.readFileSync(file, 'utf8'); } catch (e) { console.warn('! vehicles.html not found — list not injected'); return; }
+  const re = /<!--SEO-LIST-START-->[\s\S]*?<!--SEO-LIST-END-->/;
+  if (!re.test(src)) { console.warn('! SEO-LIST markers missing in vehicles.html — list not injected'); return; }
+  fs.writeFileSync(file, src.replace(re, () => '<!--SEO-LIST-START-->' + html + '<!--SEO-LIST-END-->'));
+}
+
 function robots() { return 'User-agent: *\nAllow: /\n\nSitemap: ' + SITE + '/sitemap.xml\n'; }
 
 function listDir(dir) { try { return fs.readdirSync(dir); } catch (e) { return []; } }
@@ -334,6 +356,7 @@ async function main() {
 
   // 4) index + sitemap + robots (written last)
   fs.writeFileSync(path.join(vdir, 'index.json'), JSON.stringify({ generated: new Date().toISOString(), ids: vehicles.map((v) => v.id) }));
+  injectVehicleList(path.join(OUT, 'vehicles.html'), staticCards(vehicles, photoMap));
   fs.writeFileSync(path.join(OUT, 'sitemap.xml'), sitemap(vehicles));
   fs.writeFileSync(path.join(OUT, 'robots.txt'), robots());
 
