@@ -88,7 +88,10 @@ const SCHEMA = {
     'follow_up', 'created_at', 'updated_at', 'updated_by'], // follow_up: no longer used (kept for compatibility with existing sheets)
   LEADS: ['lead_id', 'type', 'name', 'phone', 'email', 'vehicle_type', 'make', 'model', 'year_from', 'year_to',
     'year', 'min_budget', 'max_budget', 'price', 'leasing', 'notes', 'photos_url', 'photo_count', 'source', 'ref',
-    'lang', 'status', 'assigned_to', 'created_at', 'updated_at', 'handled_by', 'converted_id', 'reject_reason', 'about']
+    'lang', 'status', 'assigned_to', 'created_at', 'updated_at', 'handled_by', 'converted_id', 'reject_reason', 'about'],
+  // Market tab: ads found on other sites (e.g. ikman.lk) that an officer pasted in by hand. Price is in Lakhs.
+  MARKET: ['market_id', 'source', 'url', 'title', 'vehicle_type', 'make', 'model', 'year', 'price', 'mileage', 'fuel',
+    'transmission', 'district', 'phone', 'notes', 'status', 'created_at', 'updated_at', 'created_by']
 };
 
 // Columns stored as plain text so leading zeros are not lost
@@ -96,7 +99,8 @@ const TEXT_COLS = {
   USERS: ['username', 'password_hash', 'phone'],
   BUYERS: ['phone', 'phone2'],
   VEHICLES: ['owner_phone', 'phone2'],
-  LEADS: ['phone']
+  LEADS: ['phone'],
+  MARKET: ['phone']
 };
 
 // ---------- Default dropdown data (inserted once by setup) ----------
@@ -518,6 +522,10 @@ function api(token, action, payload) {
     listLeads: listLeads_,
     updateLead: updateLead_,
     leadPhotos: leadPhotos_,
+    marketParse: marketParse_,
+    marketList: marketList_,
+    marketSave: marketSave_,
+    marketUpdate: marketUpdate_,
     logout: function () { CacheService.getScriptCache().remove('S_' + token); return { ok: true }; }
   };
   const h = handlers[action];

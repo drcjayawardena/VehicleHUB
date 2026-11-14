@@ -1141,7 +1141,7 @@ function logout(silent) {
  * ============================================================ */
 const TABS = [
   ['dashboard', 'home', 'Dashboard'], ['newcall', 'phone', 'New Call'], ['leads', 'inbox', 'Requests'], ['buyers', 'user', 'Buyers'],
-  ['vehicles', 'car', 'Vehicles'], ['matches', 'link', 'Matches'], ['deals', 'award', 'Deals'], ['approvals', 'approve', 'Approvals', 'admin'],
+  ['vehicles', 'car', 'Vehicles'], ['matches', 'link', 'Matches'], ['market', 'globe', 'Market'], ['deals', 'award', 'Deals'], ['approvals', 'approve', 'Approvals', 'admin'],
   ['settings', 'settings', 'Settings']
 ];
 
@@ -1172,7 +1172,7 @@ function go(view, params) {
   window.scrollTo(0, 0);
   ({ dashboard: viewDashboard, newcall: viewNewCall, buyers: viewBuyers, vehicles: viewVehicles,
      matches: viewMatches, settings: viewSettings, buyerForm: viewBuyerForm, vehicleForm: viewVehicleForm,
-     results: viewResults, approvals: viewApprovals, deals: viewDeals, leads: viewLeads
+     results: viewResults, approvals: viewApprovals, deals: viewDeals, leads: viewLeads, market: viewMarket
   })[view]();
 }
 
@@ -1473,6 +1473,90 @@ async function deleteRecord(kind, id) {
   toast(`Deleted ${id} (${r.matchesDeleted} match${r.matchesDeleted === 1 ? '' : 'es'} removed)`);
   go(kind === 'buyer' ? 'buyers' : 'vehicles');
 }
+
+/* ============================================================
+ *  MARKET — ads from other sites (ikman.lk etc.) pasted in by hand, matched with our active buyers
+ * ============================================================ */
+async function viewMarket() {
+  const st = S.params.status || 'open';
+  setMain(`
+    <div class="toolbar">
+      <select onchange="go('market',{status:this.value})">
+        ${[['open', 'Open (Active + Contacted)'], ['Active', 'Active'], ['Contacted', 'Contacted'], ['Gone', 'Gone / sold'], ['all', 'All']]
+          .map(o => `<option value="${o[0]}" ${o[0] === st ? 'selected' : ''}>${o[1]}</option>`).join('')}
+      </select>
+      <button class="btn primary" onclick="mkToggle()">+ Add an ad</button>
+    </div>
+    <div id="mk_form" class="card" style="display:none;margin-bottom:12px"></div>
+    <div id="list" class="grid">${skeleton(3)}</div>`);
+  const r = await call('marketList', { status: st });
+  if (!r || S.view !== 'market') return;
+  S.market = r.ads;
+  $('list').innerHTML = r.ads.map(mkCard).join('') || '<div class="empty">No ads yet. Tap “+ Add an ad”, open the ad on ikman.lk, copy its link and text, and paste them here.</div>';
+}
+function mkToggle() {
+  const f = $('mk_form'); if (f.style.display === 'none') { f.style.display = ''; mkForm(); } else f.style.display = 'none';
+}
+function mkForm() {
+  const L = S.lists || {}, sel = (id, list, label) => `<label class="f"><span>${label}</span><select id="${id}">${opts(list, '', '—')}</select></label>`;
+  $('mk_form').innerHTML = `
+    <div class="muted" style="margin-bottom:8px">1) On ikman.lk open the ad → copy the page link and the ad text (title, price, details). 2) Paste below and tap “Read details”. 3) Check the boxes and Save.</div>
+    <label class="f"><span>Ad link</span><input id="mk_url" placeholder="https://ikman.lk/en/ad/..."></label>
+    <label class="f"><span>Ad text</span><textarea id="mk_text" rows="5" placeholder="Paste the ad title, price and description here"></textarea></label>
+    <div class="actions"><button class="btn" onclick="mkRead()">${ic('search')} Read details</button></div>
+    <div class="form" style="margin-top:10px">
+      <label class="f"><span>Title</span><input id="mk_title"></label>
+      ${sel('mk_ty', L.VEHICLE_TYPE, 'Type')}
+      <label class="f"><span>Make</span><input id="mk_make" placeholder="Toyota"></label>
+      <label class="f"><span>Model</span><input id="mk_model" placeholder="Aqua"></label>
+      <label class="f"><span>Year</span><input id="mk_year" type="number" inputmode="numeric"></label>
+      <label class="f"><span>Price (Lakhs)</span><input id="mk_price" type="number" step="0.01" inputmode="decimal"></label>
+      <label class="f"><span>Mileage (KM)</span><input id="mk_km" type="number" inputmode="numeric"></label>
+      ${sel('mk_fuel', L.FUEL, 'Fuel')}${sel('mk_gear', L.TRANSMISSION, 'Gear')}${sel('mk_dist', L.DISTRICT, 'District')}
+      <label class="f"><span>Seller phone (optional)</span><input id="mk_phone" inputmode="tel"></label>
+      <label class="f"><span>Notes</span><input id="mk_notes"></label>
+    </div>
+    <div class="actions" style="margin-top:10px"><button class="btn primary" onclick="mkSave()">Save ad</button><button class="btn" onclick="mkToggle()">Cancel</button></div>`;
+}
+async function mkRead() {
+  const text = $('mk_text').value.trim(); if (!text) return toast('Paste the ad text first', true);
+  const r = await call('marketParse', { text }); if (!r) return;
+  const set = (id, v) => { if (v !== '' && v != null) $(id).value = v; };
+  set('mk_title', r.title); set('mk_ty', r.vehicle_type); set('mk_make', r.make); set('mk_model', r.model); set('mk_year', r.year);
+  set('mk_price', r.price); set('mk_km', r.mileage); set('mk_fuel', r.fuel); set('mk_gear', r.transmission); set('mk_dist', r.district); set('mk_phone', r.phone);
+  toast('Details read — please check them');
+}
+async function mkSave() {
+  const v = id => $(id).value.trim();
+  const r = await call('marketSave', { url: v('mk_url'), title: v('mk_title'), vehicle_type: v('mk_ty'), make: v('mk_make'), model: v('mk_model'),
+    year: v('mk_year'), price: v('mk_price'), mileage: v('mk_km'), fuel: v('mk_fuel'), transmission: v('mk_gear'), district: v('mk_dist'),
+    phone: v('mk_phone'), notes: v('mk_notes') });
+  if (r) { toast('Saved ' + r.id); go('market', S.params); }
+}
+function mkCard(a) {
+  const name = [a.make, a.model, a.year].filter(Boolean).join(' ');
+  const spec = [a.district, a.fuel, a.transmission, a.mileage ? Number(a.mileage).toLocaleString() + ' km' : ''].filter(Boolean).join(' · ');
+  const link = /^https?:\/\//i.test(a.url) ? `<a class="btn sm" href="${esc(a.url)}" target="_blank" rel="noopener">${ic('globe')} Open ad</a>` : '';
+  const ms = a.matches.map(m => {
+    const b = m.buyer || {};
+    return `<div class="sub">${ic('user')} <b>${m.score}%</b> ${esc(b.name || ('Buyer ' + b.buyer_id))} · ${esc(wantName(b))}${b.max_budget ? ' · ' + esc(lk(b.max_budget)) : ''}
+      <span class="muted">${esc((m.reasons || []).join(', '))}</span> ${b.phone ? phoneBtns(b.phone, '') : ''}</div>`;
+  }).join('');
+  return `<div class="card rec seller">
+    <div class="top"><div><div class="title">${esc(name || a.title)} <span class="badge warn">${esc(a.source)}</span></div>
+      <div class="muted">${esc(a.market_id)} · ${esc(a.created_at)} · ${esc(a.created_by)}</div></div>
+      <div class="focus-price"><strong>${esc(lk(a.price))}</strong></div></div>
+    ${spec ? `<div>${esc(spec)}</div>` : ''}${a.title && name ? `<div class="sub">${esc(a.title)}</div>` : ''}${a.notes ? `<div class="sub">${ic('note')} ${esc(a.notes)}</div>` : ''}
+    <div class="sub"><b>${a.matches.length ? 'Matching buyers (' + a.matches.length + ')' : 'No matching buyers right now'}</b></div>${ms}
+    <div class="actions">${link}
+      ${a.canEdit && a.status === 'Active' ? `<button class="btn sm" onclick="mkSet('${esc(a.market_id)}','Contacted')">${ic('check')} Contacted seller</button>` : ''}
+      ${a.canEdit && a.status !== 'Gone' ? `<button class="btn sm" onclick="mkSet('${esc(a.market_id)}','Gone')">${ic('ban')} Sold / gone</button>` : ''}
+      ${a.canEdit ? `<button class="btn sm red" onclick="mkDel('${esc(a.market_id)}')">Delete</button>` : ''}
+      <span class="badge">${esc(a.status)}</span></div>
+  </div>`;
+}
+async function mkSet(id, status) { const r = await call('marketUpdate', { id, status }); if (r) go('market', S.params); }
+async function mkDel(id) { if (!confirm('Delete this ad?')) return; const r = await call('marketUpdate', { id, remove: true }); if (r) go('market', S.params); }
 
 /* ============================================================
  *  CUSTOMER REQUESTS (LEADS) — from the public request form

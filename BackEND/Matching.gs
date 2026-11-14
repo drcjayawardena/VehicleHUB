@@ -291,3 +291,134 @@ function installHourlyTrigger() {
   ScriptApp.newTrigger('refreshAllMatches').timeBased().everyHours(1).create();
   return '✅ Hourly trigger installed';
 }
+
+// ============================================================
+//  MARKET TAB — ads from other sites (e.g. ikman.lk), pasted in by an Officer
+//  No scraping: the officer pastes the ad link + text; we read the details and match them with active buyers.
+//  The MARKET sheet is created automatically the first time the tab is used.
+// ============================================================
+const MARKET_STATUS = { ACTIVE: 'Active', CONTACTED: 'Contacted', GONE: 'Gone' };
+
+function marketEnsure_() { ensureSheet_(ss_(), 'MARKET'); }
+
+/** Reads make / model / year / price (Lakhs) / fuel / gear / district / mileage / phone from pasted ad text. */
+function marketParse_(p) {
+  const text = String(p.text || '').slice(0, 6000);
+  const low = ' ' + text.toLowerCase().replace(/[^a-z0-9඀-෿.,/ -]+/g, ' ') + ' ';
+  const out = { title: '', vehicle_type: '', make: '', model: '', year: '', price: '', mileage: '', fuel: '', transmission: '', district: '', phone: '' };
+  out.title = text.split(/\r?\n/).map(function (x) { return x.trim(); }).filter(Boolean)[0] || '';
+  if (out.title.length > 120) out.title = out.title.slice(0, 120);
+
+  // make / model (longest model name wins)
+  let best = null;
+  readAll_('VEHICLE_MASTER').forEach(function (m) {
+    const mk = String(m.make || '').toLowerCase(), md = String(m.model || '').toLowerCase();
+    if (!mk) return;
+    const hasMk = low.indexOf(' ' + mk + ' ') >= 0 || low.indexOf(' ' + mk + ',') >= 0;
+    const hasMd = md && (low.indexOf(' ' + md + ' ') >= 0 || low.indexOf(' ' + md + ',') >= 0 || low.indexOf(' ' + md + '.') >= 0);
+    const score = (hasMd ? 100 + md.length : 0) + (hasMk ? 10 : 0);
+    if (score > 0 && (!best || score > best.score)) best = { score: score, m: m, hasMd: !!hasMd };
+  });
+  if (best) {
+    out.vehicle_type = String(best.m.vehicle_type || ''); out.make = String(best.m.make || '');
+    out.model = best.hasMd ? String(best.m.model || '') : '';
+  }
+  // year (first plausible 4-digit year)
+  const thisYear = new Date().getFullYear();
+  const ys = (text.match(/\b(19[7-9]\d|20[0-4]\d)\b/g) || []).map(Number).filter(function (y) { return y <= thisYear + 1; });
+  if (ys.length) out.year = ys[0];
+  // price in Lakhs
+  let m;
+  if ((m = text.match(/(?:ලක්ෂ|lakhs?|lacs?)\s*\.?\s*([\d]+(?:\.\d+)?)/i)) || (m = text.match(/([\d]+(?:\.\d+)?)\s*(?:lakhs?|lacs?|ලක්ෂ)/i))) {
+    out.price = Math.round(parseFloat(m[1]) * 100) / 100;
+  } else if ((m = text.match(/([\d]+(?:\.\d+)?)\s*(?:mn|million)\b/i))) {
+    out.price = Math.round(parseFloat(m[1]) * 10 * 100) / 100;
+  } else {
+    const rs = text.match(/(?:rs\.?|lkr)\s*([\d,]{6,})/i) || text.match(/\b(\d{1,3}(?:,\d{3}){2,})\b/);
+    if (rs) { const v = parseInt(rs[1].replace(/,/g, ''), 10); if (v >= 100000) out.price = Math.round(v / 1000) / 100; }
+  }
+  // mileage
+  if ((m = text.match(/([\d,]{3,7})\s*km\b/i))) out.mileage = parseInt(m[1].replace(/,/g, ''), 10);
+  // fuel / transmission
+  if (/hybrid/i.test(text)) out.fuel = 'Hybrid'; else if (/electric|\bev\b/i.test(text)) out.fuel = 'Electric';
+  else if (/diesel/i.test(text)) out.fuel = 'Diesel'; else if (/petrol/i.test(text)) out.fuel = 'Petrol';
+  if (/tiptronic/i.test(text)) out.transmission = 'Tiptronic'; else if (/\bauto(matic)?\b/i.test(text)) out.transmission = 'Auto';
+  else if (/manual/i.test(text)) out.transmission = 'Manual';
+  // district
+  DEFAULT_LISTS.DISTRICT.some(function (d) { if (low.indexOf(' ' + d.toLowerCase() + ' ') >= 0 || low.indexOf(' ' + d.toLowerCase() + ',') >= 0) { out.district = d; return true; } return false; });
+  // phone (optional)
+  if ((m = text.match(/(?:\+?94|0)\s?7\d[\s-]?\d{3}[\s-]?\d{4}/))) out.phone = m[0].replace(/[\s-]/g, '').replace(/^\+?94/, '0');
+  return out;
+}
+
+function marketNum_(v) { const n = Number(String(v == null ? '' : v).replace(/,/g, '')); return isNaN(n) ? '' : n; }
+
+function marketSave_(p, user) {
+  marketEnsure_();
+  const url = str_(p.url);
+  if (url && !/^https?:\/\//i.test(url)) throw new Error('Link must start with http:// or https://');
+  const make = str_(p.make), price = marketNum_(p.price);
+  if (!make) throw new Error('Make is required');
+  if (price === '' || price <= 0) throw new Error('Price (Lakhs) is required');
+  if (url) {
+    const dup = readAll_('MARKET').filter(function (r) { return String(r.url) === url && r.status !== MARKET_STATUS.GONE; })[0];
+    if (dup) throw new Error('This link is already saved (' + dup.market_id + ')');
+  }
+  const now = new Date();
+  const rec = {
+    market_id: nextId_('MARKET', 'market_id', 'M'), source: url ? (url.match(/^https?:\/\/(?:www\.)?([^\/]+)/i) || [])[1] || 'link' : 'manual',
+    url: url, title: str_(p.title), vehicle_type: str_(p.vehicle_type), make: make, model: str_(p.model),
+    year: marketNum_(p.year), price: price, mileage: marketNum_(p.mileage), fuel: str_(p.fuel), transmission: str_(p.transmission),
+    district: str_(p.district), phone: str_(p.phone), notes: str_(p.notes), status: MARKET_STATUS.ACTIVE,
+    created_at: now, updated_at: now, created_by: user.username
+  };
+  appendObj_('MARKET', rec);
+  return { id: rec.market_id };
+}
+
+function marketUpdate_(p, user) {
+  marketEnsure_();
+  const r = findById_('MARKET', 'market_id', p.id);
+  if (!r) throw new Error('Ad not found');
+  if (!isAdmin_(user) && String(r.created_by).toLowerCase() !== String(user.username).toLowerCase()) throw new Error('Only the officer who added this ad (or an admin) can change it');
+  if (p.remove) {
+    sheet_('MARKET').deleteRow(r._row);
+    return { removed: true };
+  }
+  const st = str_(p.status);
+  if (st && [MARKET_STATUS.ACTIVE, MARKET_STATUS.CONTACTED, MARKET_STATUS.GONE].indexOf(st) < 0) throw new Error('Bad status');
+  updateById_('MARKET', 'market_id', r.market_id, function (row) {
+    if (st) row.status = st;
+    if (p.notes !== undefined) row.notes = str_(p.notes);
+    row.updated_at = new Date();
+    return row;
+  });
+  return { ok: true };
+}
+
+/** Saved ads with the active buyers that match each one (score >= MATCH_CONFIG.MIN_SCORE). */
+function marketList_(p, user) {
+  marketEnsure_();
+  const st = str_(p.status) || 'open';
+  const officers = officersMap_();
+  const buyers = readAll_('BUYERS').filter(isBuyerActive_);
+  const ads = readAll_('MARKET').filter(function (a) {
+    if (st === 'open') return a.status !== MARKET_STATUS.GONE;
+    return st === 'all' || a.status === st;
+  }).sort(function (a, b) { return String(b.market_id).localeCompare(String(a.market_id)); }).slice(0, 150);
+  return {
+    ads: ads.map(function (a) {
+      const matches = a.status === MARKET_STATUS.GONE ? [] : buyers.map(function (b) {
+        const r = scoreMatch_(b, a);
+        return { score: r.score, reasons: r.reasons, b: b };
+      }).filter(function (x) { return x.score >= MATCH_CONFIG.MIN_SCORE; })
+        .sort(function (x, y) { return y.score - x.score; }).slice(0, 8)
+        .map(function (x) { return { score: x.score, reasons: x.reasons, buyer: viewRecord_(x.b, 'B', user, officers, true) }; });
+      const o = {};
+      SCHEMA.MARKET.forEach(function (c) { o[c] = a[c] instanceof Date ? Utilities.formatDate(a[c], APP.TZ, 'yyyy-MM-dd HH:mm') : a[c]; });
+      o.canEdit = isAdmin_(user) || String(a.created_by).toLowerCase() === String(user.username).toLowerCase();
+      o.matches = matches;
+      return o;
+    })
+  };
+}

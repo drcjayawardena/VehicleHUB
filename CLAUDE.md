@@ -39,6 +39,12 @@
   it opens the old `#v=<id>` pop-up. Keep that fallback.
 - GitHub pauses scheduled workflows after 60 days without repo activity — re-enable under Actions if the hourly run stops.
 
+## Market tab (other sites, manual)
+- Officers paste an ad link + text (e.g. from ikman.lk) in the **Market** tab; `marketParse_` (Matching.gs) reads make/model/year/price(Lakhs)/fuel/gear/district,
+  the officer checks and saves it to the `MARKET` sheet (created automatically), and `scoreMatch_` lists active buyers scoring >= `MIN_SCORE`.
+- **No scraping** of ikman.lk (their terms were not verified). Keep it manual / paste-based unless the owner gets permission or a data feed.
+- UI is in both `BackEND/Index.html` and `FrontEND/index.html` (`viewMarket`, `mk*`).
+
 ## WhatsApp (Meta Cloud API, account "VehicleHUB Sri Lanka")
 Script properties (Apps Script → Project Settings). Never print or screenshot `WA_TOKEN`.
 | Property | Meaning |
