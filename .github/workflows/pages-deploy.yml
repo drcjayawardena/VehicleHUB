@@ -4,7 +4,7 @@
 #
 # Before publishing, scripts/build-vehicle-pages.js generates the SEO pages (FrontEND/v/*.html),
 # sitemap.xml and robots.txt from the live showroom data. These files are NOT committed (.gitignore).
-# The hourly refresh lives in vehicle-pages-refresh.yml, which calls this workflow.
+# There is no hourly refresh any more: the pages are rebuilt on every push below, or by Actions -> Run workflow.
 name: Website — deploy (GitHub Pages)
 
 on:

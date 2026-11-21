@@ -33,11 +33,11 @@
   `/exec` API and generates `FrontEND/v/<vehicle_id>.html` (+ photos in `v/img/`, `v/index.json`), `sitemap.xml`, `robots.txt`.
   These are **generated in CI and not committed** (`.gitignore`). Run locally: `node scripts/build-vehicle-pages.js`.
 - `pages-deploy.yml` runs the script before every publish (photos cached with `actions/cache`).
-  `vehicle-pages-refresh.yml` calls it **every hour** (and manually: Actions → "Website — refresh vehicle pages").
-  A failed build on a normal push does not block the website update; scheduled / manual runs fail loudly.
+  The hourly refresh workflow was removed on 2026-11-21 (owner's request): new / sold vehicles appear on the static pages only after the next
+  push to `FrontEND/**` / `scripts/**`, or manually: Actions → "Website — deploy (GitHub Pages)" → Run workflow.
+  A failed build on a normal push does not block the website update; manual runs fail loudly.
 - `vehicles.html` links a card to `v/<id>.html` only if the id is in `v/index.json`; otherwise (vehicle approved in the last hour)
   it opens the old `#v=<id>` pop-up. Keep that fallback.
-- GitHub pauses scheduled workflows after 60 days without repo activity — re-enable under Actions if the hourly run stops.
 
 ## Market tab (other sites, manual)
 - Officers paste an ad link + text (e.g. from ikman.lk) in the **Market** tab; `marketParse_` (Matching.gs) reads make/model/year/price(Lakhs)/fuel/gear/district,
