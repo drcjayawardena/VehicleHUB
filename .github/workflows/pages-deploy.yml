@@ -23,15 +23,12 @@ permissions:
   id-token: write
 
 jobs:
-  deploy:
+  # Build and upload in one job, publish in a second one (GitHub's own Pages starter layout).
+  # With both in one job, deploy-pages sometimes looked for the upload a fraction of a second after it
+  # finished and found nothing ("Found 0 artifact(s)"); the job boundary gives the upload time to register.
+  # A re-run of the failed deploy job alone then also finds exactly one upload.
+  build:
     runs-on: ubuntu-latest
-    # One Pages deployment at a time (job level, so it also works when called from another workflow).
-    concurrency:
-      group: pages
-      cancel-in-progress: false
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
 
@@ -42,7 +39,7 @@ jobs:
         with:
           node-version: 20
 
-      # Photos already downloaded from Drive are kept between runs, so each hourly run only fetches new ones.
+      # Photos already downloaded from Drive are kept between runs, so each run only fetches new ones.
       - uses: actions/cache@v4
         with:
           path: FrontEND/v/img
@@ -50,7 +47,7 @@ jobs:
           restore-keys: vehicle-photos-
 
       # A failed build must not block a normal website update (push): the site then publishes without the
-      # static vehicle pages and vehicles.html falls back to its pop-up. Scheduled / manual runs fail loudly.
+      # static vehicle pages and vehicles.html falls back to its pop-up. Manual runs fail loudly.
       - name: Build vehicle pages, sitemap.xml, robots.txt
         continue-on-error: ${{ github.event_name == 'push' }}
         env:
@@ -61,5 +58,16 @@ jobs:
         with:
           path: FrontEND
 
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    # One Pages deployment at a time (job level, so it also works when called from another workflow).
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
       - id: deployment
         uses: actions/deploy-pages@v5
