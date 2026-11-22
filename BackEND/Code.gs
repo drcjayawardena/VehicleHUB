@@ -28,7 +28,7 @@ const APP = {
   // name, phone and the vehicle details are shown. Set true to let admins see everyone.
   ADMIN_SEES_ALL_CUSTOMERS: false,
   // Self-registration from the login page. New accounts stay inactive until an admin approves them.
-  ALLOW_REGISTRATION: true,
+  ALLOW_REGISTRATION: false,   // owner's request (2026-11-22): no self sign-up; set true to open it again
   REQUIRE_APPROVAL: true,
   // Vehicles added by officers (staff) stay "Pending" until an admin approves them.
   // Pending vehicles are not matched. Vehicles added by admins are approved automatically.
