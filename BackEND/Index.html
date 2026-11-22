@@ -80,6 +80,7 @@
       font-size: 14px; white-space: nowrap; border-radius: 6px; }
     .fbnav:hover { color: #fff; background: rgba(24,119,242,.25); }
     .fbnav .ic { color: #6aa5ff; }
+    .fbnav.socx { margin-top: 0; border-top: 0; }
     .fblogin { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 4px; padding: 9px;
       border-radius: 8px; background: #e7f0fe; color: #1877f2; font-weight: 600; font-size: 14px; text-decoration: none; }
     .fblogin:hover { background: #d6e6fd; }
@@ -568,7 +569,9 @@ const ICONS = {
   ban: '<circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>',
   newItem: '<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>',
   inbox: '<polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>',
-  facebook: '<path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/>'
+  facebook: '<path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/>',
+  instagram: '<rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/>',
+  tiktok: '<path d="M9 12a4 4 0 1 0 4 4V3c.5 2.6 2.4 4.5 5 5"/>'
 };
 const ic = (name, cls) => '<svg class="ic' + (cls ? ' ' + cls : '') + '" viewBox="0 0 24 24" aria-hidden="true">' + (ICONS[name] || '') + '</svg>';
 /** Status values may contain symbols (e.g. "Deal ✅") — show them as plain words. */
@@ -1213,6 +1216,8 @@ function renderLogin() {
       <button class="btn primary big" id="lg_btn">Login</button>
       <div id="lg_reg" style="text-align:center;display:none">New officer? <button type="button" class="link" onclick="renderRegister()">Create an account</button></div>
       <a class="fblogin" href="${FACEBOOK_URL}" target="_blank" rel="noopener">${ic('facebook')} Follow VehicleHub on Facebook</a>
+      <div style="display:flex;gap:8px"><a class="fblogin" style="flex:1" href="${INSTAGRAM_URL}" target="_blank" rel="noopener">${ic('instagram')} Instagram</a>
+        <a class="fblogin" style="flex:1" href="${TIKTOK_URL}" target="_blank" rel="noopener">${ic('tiktok')} TikTok</a></div>
     </form></div>`;
   $('lg_u').focus();
   google.script.run.withSuccessHandler(open => { if (open && $('lg_reg')) $('lg_reg').style.display = ''; }).registrationOpen();
@@ -1294,6 +1299,8 @@ const TABS = [
 
 // VehicleHub Facebook page (split so no "//" appears inside a template literal)
 const FACEBOOK_URL = 'https:/' + '/www.facebook.com/profile.php?id=61593573333056';
+const INSTAGRAM_URL = 'https:/' + '/www.instagram.com/srilankavehiclehub2026/';
+const TIKTOK_URL = 'https:/' + '/www.tiktok.com/@vehiclehubsrilanka';
 
 function renderShell() {
   $('app').innerHTML = `
@@ -1304,7 +1311,9 @@ function renderShell() {
       </div>
       <nav id="nav">${TABS.filter(t => !t[3] || S.user.role === 'admin').map(t =>
         `<button data-v="${t[0]}" onclick="go('${t[0]}')">${ic(t[1])}<span>${t[2]}</span><em class="navcount" id="nc_${t[0]}"></em></button>`).join('')}
-        <a class="fbnav" href="${FACEBOOK_URL}" target="_blank" rel="noopener">${ic('facebook')}<span>Facebook</span></a></nav>
+        <a class="fbnav" href="${FACEBOOK_URL}" target="_blank" rel="noopener">${ic('facebook')}<span>Facebook</span></a>
+          <a class="fbnav socx" href="${INSTAGRAM_URL}" target="_blank" rel="noopener">${ic('instagram')}<span>Instagram</span></a>
+          <a class="fbnav socx" href="${TIKTOK_URL}" target="_blank" rel="noopener">${ic('tiktok')}<span>TikTok</span></a></nav>
     </header>
     <main id="main"></main>
     <div id="verwarn" class="verwarn" style="display:none"></div>`;
