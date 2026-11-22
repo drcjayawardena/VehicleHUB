@@ -42,6 +42,13 @@
   `v/index.json` also lists each vehicle's photo files (`photos`), so the ad view shows them from the website instead of the API.
 - Static cards injected between the SEO-LIST markers use the marketplace card markup (`a.ad`, `.th`, `.b`); keep them in step with `adCard()`.
 
+## Inquiry sources (v3.8)
+- Every request stores the `?src=` tag of the link the customer used in LEADS `source` (fb, ig, tiktok, wa, qr, google, showroom, wanted …).
+  `vehicles.html` keeps `src` / `ref` for the visit and adds them to every `request.html` link; static `v/<id>.html` pages do the same (`TRACK_JS`).
+- Dashboard card "Where inquiries come from" = `leadStats_` (7 / 30 / 90 days). Add a source name in `LEAD_SOURCE_NAMES` when a new tag is used.
+- Officer app **Create Ad** writes a Sri Lankan classified-style caption per platform (Facebook / Instagram / TikTok / WhatsApp) with a link
+  tagged `src=<platform>&ref=<officer>` (static page if built, else `vehicles.html#v=`, else the request form).
+
 ## Schema updates
 - `autoMigrate_()` (Code.gs, called by `doPost`) appends new SCHEMA columns at the end of VEHICLES / LEADS once per `APP.VERSION`
   (`SCHEMA_VERSION` script property). It only appends — if a sheet's headers differ from the schema it changes nothing.
@@ -73,8 +80,8 @@ Other private settings (also Script properties — never hard-code phone numbers
 Other approved templates: `vehicle_match`, `user_approved`. Each customer send is logged to `WA_LOG` as `cust:<lead_id>`.
 
 ## Open items (as of 2026-10-29)
-1. `lead_received` template was **In review** at Meta. Once **Active**, set script property
-   `WA_CUSTOMER_TEMPLATE = lead_received`, then test via `request.html` with the owner's own number and check `WA_LOG`.
+1. `lead_received` template is **Active** at Meta (seen 2026-11-22). Set script property
+   `WA_CUSTOMER_TEMPLATE = lead_received` (if not done yet), then test via `request.html` with the owner's own number and check `WA_LOG`.
 2. Re-approval required when a user edits their profile.
 3. Version-compare bug (app update check).
 Done 2026-10-29: login lockout (5 fails → 15 min, `APP.MAX_LOGIN_FAILS` / `APP.LOCK_MINUTES`), `addMaster` admin-only.

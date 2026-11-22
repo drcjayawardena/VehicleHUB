@@ -225,8 +225,15 @@ function renderPage(v, photos, contact) {
       'function go(d){var i=(idx()+d+n)%n;g.scrollTo({left:i*g.clientWidth,behavior:"smooth"})}' +
       'document.getElementById("gp").onclick=function(){go(-1)};document.getElementById("gn").onclick=function(){go(1)};' +
       'g.addEventListener("scroll",function(){c.textContent=(idx()+1)+" / "+n})})();</script>\n' : '') +
+    TRACK_JS +
     '</body>\n</html>\n';
 }
+
+// Ad links open this page as v/ID.html?src=fb&ref=officer: pass those on to the request form / full ad view,
+// so the request is counted under that source on the officer Dashboard.
+const TRACK_JS = '<script>(function(){var q=new URLSearchParams(location.search),s=q.get("src"),r=q.get("ref");if(!s&&!r)return;' +
+  'document.querySelectorAll(\'a[href*="request.html"],a[href*="vehicles.html"]\').forEach(function(a){var u=new URL(a.href);' +
+  'if(s)u.searchParams.set("src",s);if(r)u.searchParams.set("ref",r);a.href=u.href;});})();</script>\n';
 
 const CSS = [
   ':root{--p:#1d3f8f;--p2:#2d5bd0;--ink:#172033;--mut:#5f6b7d;--bg:#f3f5f9;--line:#dde3ee;--soft:#eef3ff}',

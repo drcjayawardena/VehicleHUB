@@ -854,16 +854,26 @@ async function openAdComposer(vehicleId) {
       <label class="muted" for="ad_photo">Vehicle photo</label><select id="ad_photo"><option>Loading photos…</option></select>
       <div class="ad-tip">Possible number plates are blurred in the ad image, including older vehicle photos. Review the preview before sharing. Direct publishing needs official account connections and platform approval.</div>
       <button class="btn primary" onclick="downloadVehicleAd()">Download ad image</button><button class="btn green" onclick="shareVehicleAd()">Share ad image</button>
-      <button class="btn" onclick="copyVehicleCaption()">Copy caption</button></div></section>`;
+      <label class="muted" for="ad_platform">Caption for</label>
+      <select id="ad_platform" onchange="renderAdCaption()"><option value="fb">Facebook</option><option value="ig">Instagram</option><option value="tiktok">TikTok</option><option value="wa">WhatsApp</option></select>
+      <label class="muted" for="ad_down">Down payment (Lakhs, optional)</label>
+      <input id="ad_down" type="number" min="0" step="0.5" inputmode="decimal" placeholder="e.g. 20" oninput="renderAdCaption()">
+      <textarea id="ad_caption" rows="12" style="width:100%;font-size:13px;line-height:1.45" aria-label="Caption"></textarea>
+      <button class="btn" onclick="copyVehicleCaption()">Copy caption</button>
+      <div class="ad-tip">The link in the caption is tagged with the platform, so requests from it show under that source on the Dashboard. You can edit the text before copying.</div></div></section>`;
   layer.addEventListener('click', e => { if (e.target === layer) closeAdComposer(); }); document.body.appendChild(layer);
   $('ad_photo').onchange = e => changeAdPhoto(e.target.value);
+  renderAdCaption(); adBuiltIds().then(renderAdCaption);
   const r = await call('listPhotos', { vehicleId }); if (!$('ad_back')) return;
   AD.photos = r && r.photos || [];
   if (AD.photos.length) { $('ad_photo').innerHTML = AD.photos.map((p,i) => `<option value="${esc(p.id)}">Photo ${i + 1}</option>`).join(''); await changeAdPhoto(AD.photos[0].id); }
   else { $('ad_photo').innerHTML = '<option value="">No photos uploaded</option>'; drawVehicleAd(); }
 }
 function closeAdComposer() { const el = $('ad_back'); if (el) el.remove(); }
-function changeAdFormat(value) { AD.format = value === 'tiktok' ? 'tiktok' : 'feed'; drawVehicleAd(); }
+function changeAdFormat(value) {
+  AD.format = value === 'tiktok' ? 'tiktok' : 'feed'; drawVehicleAd();
+  if ($('ad_platform') && (value === 'tiktok') !== ($('ad_platform').value === 'tiktok')) { $('ad_platform').value = value === 'tiktok' ? 'tiktok' : 'fb'; renderAdCaption(); }
+}
 async function changeAdPhoto(id) { AD.photoData = ''; if (id) { const r = await call('getPhoto', {vehicleId:AD.vehicle.vehicle_id,fileId:id}); if (r) AD.photoData = r.data || ''; } drawVehicleAd(); }
 function drawPhotoPlateSafe(ctx, img, dx, dy, dw, dh, radius) {
   const s = Math.max(dw / img.width, dh / img.height);
@@ -909,10 +919,22 @@ function drawVehicleAd() {
 }
 function vehicleAdBlob() { return new Promise((ok,no)=>{const c=$('ad_canvas'); if(!c)return no(Error('Ad preview is closed')); c.toBlob(b=>b?ok(b):no(Error('Could not create image')),'image/jpeg',.94);}); }
 async function downloadVehicleAd() { try { const b=await vehicleAdBlob(),a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download=`${AD.vehicle.make||'vehicle'}-${AD.vehicle.model||''}-${AD.vehicle.year||''}-ad.jpg`.replace(/[^a-z0-9.-]+/gi,'-'); a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),1200); } catch(e){toast(e.message,true);} }
-function vehicleAdRequestLink() {
-  const v = AD.vehicle, u = new URL(S.formUrl || 'https://drcjayawardena.github.io/VehicleHUB/request.html');
-  u.searchParams.set('type', 'buyer'); u.searchParams.set('src', 'vehicle-ad');
-  u.searchParams.set('ref', S.user && S.user.username || '');
+function adSiteBase() { return (S.formUrl || 'https://drcjayawardena.github.io/VehicleHUB/request.html').replace(/request\.html.*$/, ''); }
+let AD_BUILT = null;   // ids that have a static page on the website (v/index.json)
+async function adBuiltIds() {
+  if (AD_BUILT) return AD_BUILT;
+  try { const r = await fetch(adSiteBase() + 'v/index.json', { cache: 'no-cache' }); if (r.ok) { const j = await r.json(); AD_BUILT = {}; (j.ids || []).forEach(id => AD_BUILT[id] = 1); } } catch (e) {}
+  return AD_BUILT || {};
+}
+/** Link for the caption, tagged ?src=<platform>&ref=<officer>: the vehicle's page on the website, or the request form. */
+function vehicleAdLink(platform) {
+  const v = AD.vehicle, q = new URLSearchParams({ src: platform || 'vehicle-ad' });
+  if (S.user && S.user.username) q.set('ref', S.user.username);
+  const onSite = v.show_public === 'Yes' && String(v.status || 'Available') === 'Available';
+  if (onSite && AD_BUILT && AD_BUILT[v.vehicle_id]) return adSiteBase() + 'v/' + encodeURIComponent(v.vehicle_id) + '.html?' + q;
+  if (onSite) return adSiteBase() + 'vehicles.html?' + q + '#v=' + encodeURIComponent(v.vehicle_id);
+  const u = new URL(adSiteBase() + 'request.html');
+  u.searchParams.set('type', 'buyer'); q.forEach((val, k) => u.searchParams.set(k, val));
   if (v.make) u.searchParams.set('make', v.make);
   if (v.model) u.searchParams.set('model', v.model);
   if (v.vehicle_type) u.searchParams.set('vtype', v.vehicle_type);
@@ -920,12 +942,40 @@ function vehicleAdRequestLink() {
   if (v.price) u.searchParams.set('price', v.price);
   return u.href;
 }
-function vehicleAdCaption() {
-  const v=AD.vehicle;
-  return `${carName(v)}\n${lk(v.price)}\n${[v.vehicle_type,v.condition,v.color,v.fuel,v.transmission,v.district].filter(Boolean).join(' · ')}\nවාහනය ගැන විමසීමට / Request this vehicle:\n${vehicleAdRequestLink()}`;
+/** Sri Lankan classified-style caption (see docs/ad-maker-prompt.md). Never invents facts: blank fields are left out. */
+function vehicleAdCaption(platform) {
+  platform = platform || ($('ad_platform') && $('ad_platform').value) || 'fb';
+  const v = AD.vehicle;
+  const title = [v.make, v.model, v.year].filter(Boolean).join(' ').toUpperCase() || String(v.vehicle_type || 'Vehicle').toUpperCase();
+  const price = v.price !== '' && v.price != null ? 'ලක්ෂ ' + v.price + '/=' : '';
+  const down = String(($('ad_down') && $('ad_down').value) || '').trim();
+  const phone = (S.user && S.user.phone) || '';
+  const km = v.mileage !== '' && v.mileage != null && Number(v.mileage) ? Number(v.mileage).toLocaleString('en-US') + ' KM' : '';
+  const specs = [v.year ? v.year + ' Manufactured' : '', km ? 'Mileage – ' + km : '', [v.fuel, v.transmission].filter(Boolean).join(' · '),
+    [v.condition, v.color].filter(Boolean).join(' · '), v.district ? '📍 ' + v.district : ''].filter(Boolean);
+  const points = String(v.description || '').split(/\n+/).map(x => x.trim()).filter(Boolean).slice(0, 6);
+  const tag = x => '#' + String(x || '').replace(/[^A-Za-z0-9]/g, '');
+  const tags = ['#VehicleHub', tag(String(v.make || '') + String(v.model || '')), tag(v.make), '#VehicleForSale', '#SriLanka', tag(v.district)]
+    .concat(platform === 'ig' || platform === 'tiktok' ? ['#CarsForSale', '#SriLankaCars'] : [])
+    .filter((t, i, a) => t.length > 2 && a.indexOf(t) === i);
+  const link = vehicleAdLink(platform);
+  let lines;
+  if (platform === 'tiktok') {
+    lines = ['🚗 ' + title + (price ? ' | ' + price : ''), [km, v.fuel, v.transmission].filter(Boolean).join(' | '),
+      down ? 'මූලික ගෙවීම ලක්ෂ ' + down + ' ක් පමණි' : '', phone ? '📞 ' + phone : '', '✅ VehicleHub පරීක්ෂා කළ වාහනයක් · Link in bio'].filter(Boolean).concat(['', tags.join(' ')]);
+  } else {
+    lines = [price, down ? 'මූලික ගෙවීම – ලක්ෂ ' + down + ' ක් පමණි.' : '', phone ? '📞 අමතන්න – ' + phone : ''].filter(Boolean).concat(['',
+      '🚗 ' + title, '']).concat(specs, points.length ? [''] : [], points.map(x => '• ' + x), ['',
+      '✅ VehicleHub agent කෙනෙක් පරීක්ෂා කළ වාහනයක්',
+      platform === 'ig' ? '👉 Link in bio' + (phone ? ' · WhatsApp ' + phone : '') : '👉 Photos, විස්තර සහ Leasing ගණනය: ' + link],
+      platform === 'wa' ? [] : ['', tags.join(' ')]);
+  }
+  return lines.join('\n').replace(/^\n+/, '').replace(/\n{3,}/g, '\n\n').trim();
 }
-async function shareVehicleAd() { try { const b=await vehicleAdBlob(),f=new File([b],'vehiclehub-ad.jpg',{type:'image/jpeg'}); if(navigator.canShare&&navigator.canShare({files:[f]})) await navigator.share({files:[f],title:carName(AD.vehicle),text:vehicleAdCaption()}); else await downloadVehicleAd(); } catch(e){if(e.name!=='AbortError')toast(e.message,true);} }
-function copyVehicleCaption() { const t=vehicleAdCaption(); (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>toast('Caption and officer request link copied'),()=>prompt('Copy caption and officer request link:',t)); }
+function renderAdCaption() { const t = $('ad_caption'); if (t && AD.vehicle) t.value = vehicleAdCaption(); }
+function currentAdCaption() { const t = $('ad_caption'); return t && t.value.trim() ? t.value : vehicleAdCaption(); }
+async function shareVehicleAd() { try { const b=await vehicleAdBlob(),f=new File([b],'vehiclehub-ad.jpg',{type:'image/jpeg'}); if(navigator.canShare&&navigator.canShare({files:[f]})) await navigator.share({files:[f],title:carName(AD.vehicle),text:currentAdCaption()}); else await downloadVehicleAd(); } catch(e){if(e.name!=='AbortError')toast(e.message,true);} }
+function copyVehicleCaption() { const t=currentAdCaption(); (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>toast('Caption copied'),()=>prompt('Copy the caption:',t)); }
 async function galDelete(btn) {
   const p = G.photos[G.i];
   if (!p || !confirm('Delete this photo?')) return;
@@ -1094,7 +1144,7 @@ async function boot() {
   applyInit(r);
 }
 
-const APP_VERSION = '3.7';   // must match APP.VERSION in Code.gs
+const APP_VERSION = '3.8';   // must match APP.VERSION in Code.gs
 
 function applyInit(r) {
   S.user = r.user; S.lists = r.lists; S.master = r.master; S.formUrl = r.formUrl || '';
@@ -1270,8 +1320,35 @@ async function viewDashboard() {
     <div class="row" style="margin-top:14px">
       <button class="btn primary big" onclick="go('newcall')">${ic('phone')} Add a new call</button>
     </div>
+    <div class="card" id="src_card" style="margin-top:16px"><div class="loading">Loading inquiry sources…</div></div>
     <h2>${ic('star', 'h')} Top new matches</h2>
     <div class="grid">${d.topNew.map(matchCard).join('') || '<div class="empty">No new matches</div>'}</div>`);
+  loadLeadStats(S.srcDays || 30);
+}
+
+/** Dashboard card: where the website requests came from (the ?src= tag of the link used). */
+async function loadLeadStats(days) {
+  S.srcDays = days;
+  const r = await call('leadStats', { days });
+  const box = $('src_card');
+  if (!r || !box || S.view !== 'dashboard') return;
+  const max = Math.max(1, ...r.sources.map(x => x.leads));
+  const pct = (a, b) => b ? Math.round(a * 100 / b) + '%' : '–';
+  box.innerHTML = `
+    <div class="row" style="justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+      <h3 style="margin:0">${ic('inbox')} Where inquiries come from</h3>
+      <div class="row" style="gap:6px">${[7, 30, 90].map(n => `<button class="btn sm${n === r.days ? ' primary' : ''}" onclick="loadLeadStats(${n})">${n} days</button>`).join('')}</div>
+    </div>
+    <p class="muted" style="margin:6px 0 12px">${r.total.leads} request(s) in the last ${r.days} days · ${r.total.buyers} buyer · ${r.total.sellers} seller · ${r.total.converted} converted (${pct(r.total.converted, r.total.leads)})</p>
+    ${r.sources.length ? `<table style="width:100%;border-collapse:collapse;font-size:14px">
+      <tr class="muted" style="text-align:left"><th style="padding:4px 0">Source</th><th>Requests</th><th style="width:40%"></th><th>Converted</th></tr>
+      ${r.sources.map(x => `<tr style="border-top:1px solid var(--line)">
+        <td style="padding:7px 8px 7px 0"><b>${esc(x.name)}</b>${x.source && x.name !== x.source ? ` <span class="muted">(${esc(x.source)})</span>` : ''}</td>
+        <td>${x.leads}</td>
+        <td style="padding-right:14px"><div style="height:10px;border-radius:6px;background:var(--primary,#1d3f8f);width:${Math.max(4, Math.round(x.leads * 100 / max))}%"></div></td>
+        <td>${x.converted} <span class="muted">(${pct(x.converted, x.leads)})</span></td></tr>`).join('')}
+    </table>` : '<div class="empty">No website requests in this period</div>'}
+    <p class="muted" style="font-size:12.5px;margin:10px 0 0">Use the <b>Create Ad</b> button on a vehicle — its links carry the source tag (fb, ig, tiktok, wa). Calls and WhatsApp messages sent straight to your phone are not counted here.</p>`;
 }
 
 /* ============================================================
