@@ -253,6 +253,24 @@
   function sstore(k, v) { try { sessionStorage.setItem(k, v); } catch (e) {} }
   function sstored(k) { try { return sessionStorage.getItem(k); } catch (e) { return null; } }
 
+  // Where the visitor came from (?src=fb&ref=officer on ad links). Kept for this visit and passed on to every
+  // request.html link, so a request is counted under that source on the officer Dashboard.
+  var QS = new URLSearchParams(location.search);
+  var SRC = String(QS.get('src') || sstored('vh_src') || '').replace(/[^\w-]/g, '').slice(0, 40);
+  var REF = String(QS.get('ref') || sstored('vh_ref') || '').replace(/[^\w.-]/g, '').slice(0, 40);
+  if (QS.get('src')) sstore('vh_src', SRC);
+  if (QS.get('ref')) sstore('vh_ref', REF);
+  function track(url) {
+    if (SRC) url = /[?&]src=/.test(url) ? url.replace(/([?&]src=)[^&#]*/, '$1' + encodeURIComponent(SRC)) : url + (url.indexOf('?') > -1 ? '&' : '?') + 'src=' + encodeURIComponent(SRC);
+    if (REF && !/[?&]ref=/.test(url)) url += '&ref=' + encodeURIComponent(REF);
+    return url;
+  }
+  function trackLinks(root) {
+    (root || document).querySelectorAll('a[href*="request.html"]').forEach(function (a) {
+      if (!a.dataset.tracked) { a.setAttribute('href', track(a.getAttribute('href'))); a.dataset.tracked = 1; }
+    });
+  }
+
   var ICONS = {
     car: '<path d="M5 17H3v-4.5l2.2-5A2 2 0 0 1 7 6.3h10a2 2 0 0 1 1.8 1.2l2.2 5V17h-2"/><line x1="9" y1="17" x2="15" y2="17"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/><line x1="3.5" y1="12.5" x2="20.5" y2="12.5"/>',
     suv: '<path d="M3 17V9.5A1.5 1.5 0 0 1 4.5 8H8l2-3h8a2 2 0 0 1 2 2v10h-1"/><line x1="9" y1="17" x2="15" y2="17"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/><line x1="3" y1="12" x2="21" y2="12"/>',
@@ -471,10 +489,11 @@
     ['nav_sale', 'nav_want', 'nav_saved'].forEach(function (id) { $(id).classList.remove('on'); });
     $('catsBar').classList.toggle('hide', r.page === 'ad' || r.page === 'saved');
     navCounts();
-    if (r.page === 'ad') return renderAd(r.id);
-    if (r.page === 'wanted') return renderWanted();
-    if (r.page === 'saved') return renderSaved();
-    renderList();
+    if (r.page === 'ad') renderAd(r.id);
+    else if (r.page === 'wanted') renderWanted();
+    else if (r.page === 'saved') renderSaved();
+    else renderList();
+    trackLinks();
   }
 
   function opt(list, cur, first, counts) {

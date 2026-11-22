@@ -18,7 +18,7 @@
 
 const APP = {
   NAME: 'VehicleHub',
-  VERSION: '3.7',   // must match MATCH_CONFIG.VERSION in Matching.gs and APP_VERSION in Index.html
+  VERSION: '3.8',   // must match MATCH_CONFIG.VERSION in Matching.gs and APP_VERSION in Index.html
   TZ: 'Asia/Colombo',
   SESSION_SECONDS: 6 * 60 * 60, // 6 hours (CacheService maximum)
   // Login lockout: after this many wrong passwords for one account, it is locked for LOCK_MINUTES.
@@ -570,6 +570,7 @@ function api(token, action, payload) {
     deleteRecord: deleteRecord_,
     testEmail: testEmail_,
     listLeads: listLeads_,
+    leadStats: leadStats_,
     updateLead: updateLead_,
     leadPhotos: leadPhotos_,
     marketParse: marketParse_,
@@ -1930,6 +1931,36 @@ function listLeads_(p, user) {
     officers: isAdmin_(user) ? readAll_('USERS').filter(function (u) { return isTrue_(u.active); })
       .map(function (u) { return { username: String(u.username), name: String(u.full_name || u.username) }; }) : []
   };
+}
+
+/**
+ * Where do inquiries come from? Counts the requests of the last p.days days (7 / 30 / 90) by `source`
+ * (the ?src= of the link the customer used: fb, ig, tiktok, wa, qr, google, showroom …).
+ * Officers see their own requests, admins everything.
+ */
+const LEAD_SOURCE_NAMES = {
+  '': 'Website (direct)', showroom: 'Website showroom', wanted: 'Wanted board', 'vehicle-ad': 'Vehicle ad link',
+  fb: 'Facebook', facebook: 'Facebook', fb_ad: 'Facebook ads', ig: 'Instagram', instagram: 'Instagram',
+  tiktok: 'TikTok', wa: 'WhatsApp', whatsapp: 'WhatsApp', qr: 'QR card', google: 'Google', gbp: 'Google Maps'
+};
+function leadStats_(p, user) {
+  const days = [7, 30, 90].indexOf(Number(p.days)) > -1 ? Number(p.days) : 30;
+  const from = Date.now() - days * 86400000;
+  const rows = {}, total = { leads: 0, buyers: 0, sellers: 0, converted: 0 };
+  readAll_('LEADS').forEach(function (l) {
+    if (!canSeeLead_(l, user)) return;
+    const t = l.created_at instanceof Date ? l.created_at.getTime() : Date.parse(l.created_at);
+    if (!t || t < from) return;
+    const key = str_(l.source).toLowerCase().slice(0, 40);
+    const r = rows[key] = rows[key] || { source: key, name: LEAD_SOURCE_NAMES[key] || key, leads: 0, buyers: 0, sellers: 0, converted: 0 };
+    [r, total].forEach(function (x) {
+      x.leads++;
+      if (l.type === 'seller') x.sellers++; else x.buyers++;
+      if (l.status === LEAD_STATUS.CONVERTED) x.converted++;
+    });
+  });
+  return { days: days, total: total, sources: Object.keys(rows).map(function (k) { return rows[k]; })
+    .sort(function (a, b) { return b.leads - a.leads; }) };
 }
 
 /** Mark contacted / reject / reopen, or (admin) reassign. */
