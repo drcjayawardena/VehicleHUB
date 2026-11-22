@@ -1,4 +1,4 @@
-# Copies the live Apps Script code (Code.gs, Matching.gs, McLogin.gs, WhatsApp.gs,
+# Copies the live Apps Script code (Code.gs, Matching.gs, McLogin.gs, WhatsApp.gs, Facebook.gs,
 # Index.html, appsscript.json) into the BackEND/ folder of this repository.
 # Run it by hand: Actions → "Apps Script — pull live code" → Run workflow.
 # Use it once at the start, and again whenever someone edits code in the Apps Script editor.

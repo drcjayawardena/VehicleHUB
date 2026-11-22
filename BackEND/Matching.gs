@@ -9,7 +9,7 @@
  */
 
 const MATCH_CONFIG = {
-  VERSION: '3.8',        // must match APP.VERSION in Code.gs
+  VERSION: '3.9',        // must match APP.VERSION in Code.gs
   MIN_SCORE: 80,           // A match is saved and shown only when it is at least this % (80 = "at least 80% matching")
   BUDGET_TOLERANCE: 0.10,  // Allow prices up to 10% over budget (room to negotiate)
   YEAR_TOLERANCE: 1,       // Half points if within 1 year outside the range

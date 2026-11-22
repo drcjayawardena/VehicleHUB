@@ -18,7 +18,7 @@
 
 const APP = {
   NAME: 'VehicleHub',
-  VERSION: '3.8',   // must match MATCH_CONFIG.VERSION in Matching.gs and APP_VERSION in Index.html
+  VERSION: '3.9',   // must match MATCH_CONFIG.VERSION in Matching.gs and APP_VERSION in Index.html
   TZ: 'Asia/Colombo',
   SESSION_SECONDS: 6 * 60 * 60, // 6 hours (CacheService maximum)
   // Login lockout: after this many wrong passwords for one account, it is locked for LOCK_MINUTES.
@@ -571,6 +571,8 @@ function api(token, action, payload) {
     testEmail: testEmail_,
     listLeads: listLeads_,
     leadStats: leadStats_,
+    postToFacebook: postToFacebook_,
+    fbCheck: fbCheck_,
     updateLead: updateLead_,
     leadPhotos: leadPhotos_,
     marketParse: marketParse_,
@@ -606,6 +608,7 @@ function init_(p, user) {
     user: Object.assign({}, user, { full_name: me.name || user.full_name, phone: me.phone || '', email: me.email || '' }),
     lists: getLists_(),
     formUrl: APP.APP_URL + 'request.html',
+    fbReady: isAdmin_(user) && typeof fbReady_ === 'function' && fbReady_(),
     master: readAll_('VEHICLE_MASTER').map(function (m) {
       return { vehicle_type: String(m.vehicle_type), make: String(m.make), model: String(m.model) };
     })

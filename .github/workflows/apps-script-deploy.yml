@@ -33,7 +33,7 @@ jobs:
         working-directory: BackEND
         run: |
           missing=0
-          for f in appsscript.json Code.gs Matching.gs McLogin.gs WhatsApp.gs Index.html; do
+          for f in appsscript.json Code.gs Matching.gs McLogin.gs WhatsApp.gs Facebook.gs Index.html; do
             if [ ! -s "$f" ]; then echo "::error::Missing $f"; missing=1; fi
           done
           if [ "$missing" = 1 ]; then
