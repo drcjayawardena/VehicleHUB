@@ -9,6 +9,7 @@
 <meta property="og:description" content="Every ad checked by a VehicleHub agent. Buy · Sell · Lease.">
 <meta property="og:image" content="icon-512.png">
 <meta name="theme-color" content="#1d3f8f">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"Organization","name":"VehicleHub","url":"https://drcjayawardena.github.io/VehicleHUB/vehicles.html","logo":"https://drcjayawardena.github.io/VehicleHUB/icon-512.png","sameAs":["https://www.facebook.com/profile.php?id=61593573333056"]}</script>
 <link rel="icon" href="icon-192.png">
 <link rel="manifest" href="manifest.webmanifest">
 <script src="config.js"></script>
@@ -363,6 +364,12 @@
   function title(v) { return carName(v) + (v.year ? ' ' + v.year : ''); }
   function norm(s) { return String(s || '').toLowerCase().replace(/[^a-z0-9]/g, ''); }
   function waNum(p) { return p ? '94' + String(p).replace(/\D/g, '').replace(/^0/, '') : ''; }
+  /** Facebook share dialog for an ad; the shared link is tagged src=fb so requests from it count under Facebook. */
+  function fbShareUrl(id) {
+    var u = adUrl(id), i = u.indexOf('#');
+    u = i > -1 ? u.slice(0, i) + (u.slice(0, i).indexOf('?') > -1 ? '&' : '?') + 'src=fb' + u.slice(i) : u + (u.indexOf('?') > -1 ? '&' : '?') + 'src=fb';
+    return 'https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(u);
+  }
   function adUrl(id) { return S.built[id] ? new URL(pageUrl(id), location.href).href : location.href.split('#')[0] + '#v=' + id; }
   function uniq(a) { var o = {}; a.forEach(function (x) { if (x) o[x] = (o[x] || 0) + 1; }); return o; }
 
@@ -693,6 +700,7 @@
           (wa ? '<a class="btn wa" target="_blank" rel="noopener" href="' + esc(wa) + '">' + ic('chat') + ' WhatsApp</a>' : '') +
           '<a class="btn ghost" href="' + enquire + '">' + ic('send') + ' Send an enquiry</a>' +
           '<button class="btn ghost" type="button" id="shareBtn">' + ic('share') + ' Share this ad</button>' +
+          '<a class="btn ghost" target="_blank" rel="noopener" href="' + esc(fbShareUrl(v.id)) + '">' + ic('facebook') + ' Share on Facebook</a>' +
         '</div>' +
         '<div class="note">' + ic('shield') + '<span>You deal through a VehicleHub agent — the owner\'s details are kept private. Number plates are hidden in photos.</span></div>' +
       '</div></aside></div>' +
