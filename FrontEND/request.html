@@ -136,7 +136,7 @@
   var QUICK = qs.get('q') === '1';
   var lang = qs.get('lang') === 'en' ? 'en' : 'si';
   document.documentElement.lang = lang;
-  var MAX_PHOTOS = 5;
+  var MAX_PHOTOS = 8;
   // Coming from the showroom: ?type=buyer&about=V0001&make=..&model=..&vtype=..&year=..&price=..
   //                  or Wanted: ?type=seller&about=B0003&make=..&model=..&vtype=..
   var ABOUT = (qs.get('about') || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 12);
@@ -151,6 +151,12 @@
   var state = { type: '', photos: [] };
 
   var TYPES = ['Car', 'SUV / Jeep', 'Van', 'Cab / Pickup', 'Motorcycle', 'Three Wheeler', 'Lorry', 'Bus'];
+  var FUELS = ['Petrol', 'Diesel', 'Hybrid', 'Electric'];
+  var GEARS = ['Auto', 'Manual', 'Tiptronic'];
+  var CONDS = ['Brand New', 'Recondition', 'Registered (Used)'];
+  var DISTRICTS = ['Colombo', 'Gampaha', 'Kalutara', 'Kandy', 'Matale', 'Nuwara Eliya', 'Galle', 'Matara', 'Hambantota', 'Jaffna',
+    'Kilinochchi', 'Mannar', 'Vavuniya', 'Mullaitivu', 'Batticaloa', 'Ampara', 'Trincomalee', 'Kurunegala', 'Puttalam',
+    'Anuradhapura', 'Polonnaruwa', 'Badulla', 'Monaragala', 'Ratnapura', 'Kegalle'];
   var MAKES = ['Toyota', 'Suzuki', 'Honda', 'Nissan', 'Mitsubishi', 'Mazda', 'Daihatsu', 'Hyundai', 'Kia', 'Micro', 'Perodua', 'Tata', 'Mahindra',
                'Bajaj', 'TVS', 'Hero', 'Yamaha', 'BMW', 'Mercedes-Benz', 'Audi', 'Isuzu', 'Ford', 'Subaru', 'Renault', 'MG', 'BYD', 'Tesla'];
   // Make -> Model -> Year lists (same as MasterCAL Vehicle Checking). Makes without models here get a typed model.
@@ -228,7 +234,9 @@
       yFrom: 'Year (from)', yTo: 'Year (to)', year: 'Year of manufacture', budMin: 'Minimum budget (Lakhs)', budMax: 'Maximum budget (Lakhs)',
       price: 'Expected price (Lakhs)', lakhsHint: 'e.g. Rs. 6,250,000 = 62.5',
       leasing: 'I need leasing / finance',
-      photos: 'Photos', photosHint: 'Up to 5. The number plate is blurred automatically — you can check and fix it on each photo.',
+      photos: 'Photos', photosHint: 'Up to 8 — ads with photos sell much faster. The number plate is blurred automatically — you can check and fix it on each photo.',
+      mileage: 'Mileage (km)', fuel: 'Fuel', gear: 'Transmission', cond: 'Condition', color: 'Colour', district: 'District (location)',
+      details: 'Ad details', descPh: 'e.g. First owner, full service records, new tyres, no accidents',
       addPhotos: 'Add photos',
       you: 'Your details', name: 'Your name', phone: 'Phone / WhatsApp number', email: 'Email', optional: '(optional)',
       notes: 'Anything else', notesPh: 'e.g. colour does not matter, need it soon',
@@ -286,7 +294,9 @@
       quickT: 'ඔබට ගැලපෙන වාහනය අපි හොයලා දෙන්නම්', quickL: 'ඔබට ඕනෑ දේ කියන්න — ගැලපෙන වාහන එක්ක ඔබේ නිලධාරියා ඔබට කතා කරයි. නොමිලේ.',
       sellQT: 'ඔබේ වාහනය අපි විකුණලා දෙන්නම්', sellQL: 'ඔබේ වාහනයේ විස්තර දෙන්න — ගැනුම්කරුවෙක් හොයලා ඔබේ නිලධාරියා ඔබට කතා කරයි.',
       year: 'නිෂ්පාදිත අවුරුද්ද', price: 'බලාපොරොත්තු මිල (ලක්ෂ)',
-      photos: 'ඡායාරූප', photosHint: 'ඡායාරූප 5ක් දක්වා එක් කරන්න. අංක තහඩුව ස්වයංක්‍රීයව බොඳ වේ. සෑම ඡායාරූපයක්ම පරීක්ෂා කර අවශ්‍ය සංශෝධන කළ හැක.',
+      photos: 'ඡායාරූප', photosHint: 'ඡායාරූප 8ක් දක්වා එක් කරන්න. අංක තහඩුව ස්වයංක්‍රීයව බොඳ වේ. සෑම ඡායාරූපයක්ම පරීක්ෂා කර අවශ්‍ය සංශෝධන කළ හැක.',
+      mileage: 'ධාවන දුර (km)', fuel: 'ඉන්ධන', gear: 'Gear වර්ගය', cond: 'තත්ත්වය', color: 'වර්ණය', district: 'දිස්ත්‍රික්කය',
+      details: 'දැන්වීමේ විස්තර', descPh: 'උදා: පළමු අයිතිකරු, සම්පූර්ණ service records, අලුත් ටයර්',
       addPhotos: 'ඡායාරූප එක් කරන්න', e_seller: 'කරුණාකර නිෂ්පාදකයා, මොඩලය සහ මිල ඇතුළත් කරන්න.',
       pe_t: function (n, t) { return 'ඡායාරූපය ' + n + ' / ' + t + ' — අංක තහඩුව වටා කොටුවක් අඳින්න'; },
       pe_h: 'ඇඟිල්ලෙන් ඇදලා කොටුවක් අඳින්න. ඔබ සලකුණු කළ කොටස සම්පූර්ණයෙන්ම වැසෙනු ඇත.',
@@ -333,6 +343,10 @@
     return '<option value="">' + first + '</option>' + TYPES.map(function (x) {
       return '<option value="' + esc(x) + '">' + esc(x) + '</option>';
     }).join('');
+  }
+  function lsel(id, label, list) {
+    return '<label class="f"><span>' + label + '</span><select id="' + id + '"><option value="">' + t('select') + '</option>' +
+      list.map(function (x) { return '<option value="' + esc(x) + '">' + esc(x) + '</option>'; }).join('') + '</select></label>';
   }
   function fld(id, label, attrs, hint, req) {
     return '<label class="f"><span>' + label + (req ? ' <em>*</em>' : '') + (hint ? ' <i>' + hint + '</i>' : '') + '</span><input id="' + id + '" ' + (attrs || '') + '></label>';
@@ -430,10 +444,15 @@
           '<div class="two">' + fld('q_min_budget', t('budMin'), lk + ' placeholder="40"') + fld('q_max_budget', t('budMax'), lk + ' placeholder="60"', '', true) + '</div>';
       h +=
         '<div class="muted" style="margin:-6px 0 10px">' + t('lakhsHint') + '</div>' +
+        (quick ? '' : lsel('q_district', t('district') + ' <i>' + t('optional') + '</i>', DISTRICTS)) +
         '<label class="check"><input type="checkbox" id="q_leasing"><span>' + t('leasing') + '</span></label>';
     } else {
       h += '<div class="two">' + ysel('q_year', t('year')) + fld('q_price', t('price'), lk + ' placeholder="62.5"', '', true) + '</div>' +
         '<div class="muted" style="margin:-6px 0 10px">' + t('lakhsHint') + '</div>' +
+        '<div class="two">' + fld('q_mileage', t('mileage'), 'type="number" inputmode="numeric" min="0" step="1" placeholder="85000"') +
+          lsel('q_condition', t('cond'), CONDS) + '</div>' +
+        '<div class="two">' + lsel('q_fuel', t('fuel'), FUELS) + lsel('q_transmission', t('gear'), GEARS) + '</div>' +
+        '<div class="two">' + fld('q_color', t('color'), 'maxlength="40" placeholder="White"') + lsel('q_district', t('district'), DISTRICTS) + '</div>' +
         '<div class="sec">' + t('photos') + ' <span class="muted">' + t('optional') + '</span></div>' +
         '<div class="muted">' + t('photosHint') + '</div>' +
         '<div class="photos" id="ph"></div>' +
@@ -444,7 +463,7 @@
       fld('q_name', t('name'), 'autocomplete="name" maxlength="80"', '', true) +
       fld('q_phone', t('phone'), 'type="tel" inputmode="tel" autocomplete="tel" placeholder="07XXXXXXXX"', '', true) +
       (quick ? '' : fld('q_email', t('email'), 'type="email" inputmode="email" autocomplete="email" placeholder="name@gmail.com"', t('optional'))) +
-      '<label class="f"><span>' + t('notes') + ' <i>' + t('optional') + '</i></span><textarea id="q_notes" maxlength="500" placeholder="' + t('notesPh') + '"></textarea></label>' +
+      '<label class="f"><span>' + (buyer ? t('notes') : t('details')) + ' <i>' + t('optional') + '</i></span><textarea id="q_notes" maxlength="500" placeholder="' + (buyer ? t('notesPh') : t('descPh')) + '"></textarea></label>' +
       '<div class="hp" aria-hidden="true"><label>Website <input id="q_website" tabindex="-1" autocomplete="off"></label></div>' +
       '<label class="check"><input type="checkbox" id="q_consent"><span>' + t('consent') + '</span></label>' +
       '<div class="err" id="f_err"></div>' +
@@ -462,7 +481,8 @@
     }
   }
 
-  var FIELDS = ['vehicle_type', 'make', 'model', 'year_from', 'year_to', 'year', 'min_budget', 'max_budget', 'price', 'name', 'phone', 'email', 'notes'];
+  var FIELDS = ['vehicle_type', 'make', 'model', 'year_from', 'year_to', 'year', 'min_budget', 'max_budget', 'price', 'name', 'phone', 'email', 'notes',
+                'mileage', 'fuel', 'transmission', 'condition', 'color', 'district'];
   function readForm() {
     var o = {};
     FIELDS.forEach(function (k) { var el = $('q_' + k); o[k] = el ? el.value.trim() : ''; });
