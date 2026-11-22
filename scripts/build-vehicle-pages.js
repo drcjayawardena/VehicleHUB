@@ -209,10 +209,13 @@ function renderPage(v, photos, contact) {
     '<h1>' + esc(title) + '</h1>\n' +
     '<div class="pr">' + (has(v.price) ? esc(rs(v.price)) + ' <small>(' + esc(num(v.price)) + ' Lakhs)</small>' : 'Price on request') + '</div>\n' +
     (v.district ? '<div class="loc">📍 ' + esc(v.district) + '</div>\n' : '') +
-    '<table class="specs">' + specs + '</table>\n<div class="acts">\n' +
+    '<table class="specs">' + specs + '</table>\n' +
+    (v.desc ? '<h2 class="dh">Description</h2>\n<p class="desc">' + esc(v.desc) + '</p>\n' : '') +
+    '<div class="acts">\n' +
     '<a class="btn pri" href="' + esc(enquire) + '">Enquire now</a>\n' +
     (wa ? '<a class="btn wa" rel="noopener" href="https://wa.me/' + esc(wa) + '?text=' + encodeURIComponent(msg) + '">WhatsApp ' + BRAND + '</a>\n' : '') +
     (phone ? '<a class="btn ghost" href="tel:' + esc(phone) + '">Call ' + esc(phone) + '</a>\n' : '') +
+    '<a class="btn ghost" href="../vehicles.html#v=' + encodeURIComponent(v.id) + '">Leasing calculator &amp; similar vehicles</a>\n' +
     '<a class="btn ghost" href="../vehicles.html">← More vehicles</a>\n</div>\n' +
     '<p class="note">You deal through a ' + BRAND + ' agent. Number plates are hidden in photos for the owner\'s privacy. ' +
     'Availability can change — contact us to confirm.</p>\n</section>\n</div>\n</main>\n' +
@@ -243,6 +246,7 @@ const CSS = [
   '.info{padding:18px;display:flex;flex-direction:column;gap:10px}.info h1{margin:0;font-size:24px;line-height:1.25}',
   '.pr{color:var(--p);font-size:26px;font-weight:800}.pr small{color:var(--mut);font-size:14px;font-weight:500}.loc{color:var(--mut)}',
   '.specs{width:100%;border-collapse:collapse;font-size:14px}.specs td{padding:7px 0;border-bottom:1px solid #eef1f6}.specs td:first-child{color:var(--mut);width:42%}',
+  '.dh{font-size:16px;margin:14px 0 4px}.desc{white-space:pre-wrap;margin:0 0 6px}',
   '.acts{display:grid;gap:8px;margin-top:4px}.note{font-size:12px;color:var(--mut);margin:4px 0 0}',
   'footer{border-top:1px solid var(--line);background:#fff;color:var(--mut);font-size:13px}footer .wrap{padding:16px}',
   '@media(max-width:760px){.dlg{grid-template-columns:1fr;gap:0}.info h1{font-size:21px}}',
@@ -261,11 +265,14 @@ function sitemap(vehicles) {
 function staticCards(vehicles, photoMap) {
   return vehicles.slice().sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0)).map((v) => {
     const f = (photoMap[v.id] || [])[0];
-    const sub = [v.year, v.condition, v.color, v.district].filter(has).join(' · ') || v.type || '';
-    return '<a class="card" data-id="' + esc(v.id) + '" href="v/' + esc(v.id) + '.html" aria-label="' + esc(vTitle(v)) + '">' +
-      '<div class="thumb' + (f ? ' loaded' : '') + '"' + (f ? ' style="background-image:url(\'v/img/' + esc(v.id) + '/' + esc(f) + '\')"' : '') + '></div>' +
-      '<div class="b"><div class="t">' + esc(vName(v)) + '</div><div class="s">' + esc(sub) + '</div>' +
-      (has(v.price) ? '<div class="pr">' + esc(rs(v.price)) + '</div>' : '') + '</div></a>';
+    const meta = [has(v.mileage) ? num(v.mileage) + ' km' : '', v.fuel, v.transmission].filter(Boolean).join(' · ') ||
+      [v.condition, v.type].filter(Boolean).join(' · ');
+    return '<a class="ad' + (v.featured ? ' feat' : '') + '" href="v/' + esc(v.id) + '.html">' +
+      '<div class="th' + (f ? ' loaded' : '') + '"' + (f ? ' style="background-image:url(\'v/img/' + esc(v.id) + '/' + esc(f) + '\')"' : '') + '></div>' +
+      '<div class="b"><div class="t">' + esc(vTitle(v)) + '</div>' +
+      '<div class="pr">' + (has(v.price) ? esc(rs(v.price)) : 'Negotiable') + '</div>' +
+      '<div class="m">' + esc(meta) + '</div>' +
+      '<div class="f"><span>' + esc(v.district || '') + '</span><span>' + esc(isDate(v.date) ? v.date : '') + '</span></div></div></a>';
   }).join('');
 }
 
@@ -355,7 +362,9 @@ async function main() {
   });
 
   // 4) index + sitemap + robots (written last)
-  fs.writeFileSync(path.join(vdir, 'index.json'), JSON.stringify({ generated: new Date().toISOString(), ids: vehicles.map((v) => v.id) }));
+  const photoFiles = {};   // vehicles.html shows these files from the website instead of fetching them through the API
+  vehicles.forEach((v) => { if ((photoMap[v.id] || []).length) photoFiles[v.id] = photoMap[v.id]; });
+  fs.writeFileSync(path.join(vdir, 'index.json'), JSON.stringify({ generated: new Date().toISOString(), ids: vehicles.map((v) => v.id), photos: photoFiles }));
   injectVehicleList(path.join(OUT, 'vehicles.html'), staticCards(vehicles, photoMap));
   fs.writeFileSync(path.join(OUT, 'sitemap.xml'), sitemap(vehicles));
   fs.writeFileSync(path.join(OUT, 'robots.txt'), robots());

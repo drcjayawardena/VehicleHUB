@@ -36,8 +36,18 @@
   The hourly refresh workflow was removed on 2026-11-21 (owner's request): new / sold vehicles appear on the static pages only after the next
   push to `FrontEND/**` / `scripts/**`, or manually: Actions → "Website — deploy (GitHub Pages)" → Run workflow.
   A failed build on a normal push does not block the website update; manual runs fail loudly.
-- `vehicles.html` links a card to `v/<id>.html` only if the id is in `v/index.json`; otherwise (vehicle approved in the last hour)
-  it opens the old `#v=<id>` pop-up. Keep that fallback.
+- `vehicles.html` is a marketplace (list/grid, filters, featured, saved ♥, full ad view at `#v=<id>` with leasing calculator and
+  similar vehicles). A card's href is `v/<id>.html` when the id is in `v/index.json` (crawlers, new tab), else `#v=<id>`;
+  a normal click always opens the full ad view in the page. Shared / WhatsApp links use the static page when it exists.
+  `v/index.json` also lists each vehicle's photo files (`photos`), so the ad view shows them from the website instead of the API.
+- Static cards injected between the SEO-LIST markers use the marketplace card markup (`a.ad`, `.th`, `.b`); keep them in step with `adCard()`.
+
+## Schema updates
+- `autoMigrate_()` (Code.gs, called by `doPost`) appends new SCHEMA columns at the end of VEHICLES / LEADS once per `APP.VERSION`
+  (`SCHEMA_VERSION` script property). It only appends — if a sheet's headers differ from the schema it changes nothing.
+- v3.7 added VEHICLES `description` (public ad text), `featured` (admin only) and LEADS `mileage`, `fuel`, `transmission`,
+  `district`, `condition`, `color` (from the post-ad form).
+- `publicListings` is cached in pieces (`PUBLIC_LISTINGS_V2`); `clearPublicCache_()` runs on every vehicle save / approve / sale / delete.
 
 ## Market tab (other sites, manual)
 - Officers paste an ad link + text (e.g. from ikman.lk) in the **Market** tab; `marketParse_` (Matching.gs) reads make/model/year/price(Lakhs)/fuel/gear/district,
