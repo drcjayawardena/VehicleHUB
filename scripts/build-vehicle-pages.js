@@ -147,6 +147,9 @@ function renderPage(v, photos, contact) {
   const phone = contact && /^\+?\d{9,15}$/.test(String(contact.phone || '')) ? String(contact.phone) : '';
   const fb = contact && /^https:\/\/(www\.|web\.|m\.)?facebook\.com\//.test(String(contact.facebook || '')) ? String(contact.facebook) : '';
   const fbShare = 'https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(url + '?src=fb');
+  const ig = contact && /^https:\/\/(www\.)?instagram\.com\//.test(String(contact.instagram || '')) ? String(contact.instagram) : '';
+  const tt = contact && /^https:\/\/(www\.)?tiktok\.com\//.test(String(contact.tiktok || '')) ? String(contact.tiktok) : '';
+  const social = [fb, ig, tt].filter(Boolean);
   const wa = phone ? '94' + phone.replace(/^\+?(94)?0?/, '') : '';
   const msg = 'Hi ' + BRAND + ', I am interested in ' + title + (has(v.price) ? ' (' + rs(v.price) + ')' : '') + ' — Ref ' + v.id + '. ' + url;
   const enquire = '../request.html?type=buyer&src=showroom&about=' + encodeURIComponent(v.id) + '&make=' + encodeURIComponent(v.make) +
@@ -166,7 +169,7 @@ function renderPage(v, photos, contact) {
     ld.offers = {
       '@type': 'Offer', price: rupees(v.price), priceCurrency: 'LKR', availability: 'https://schema.org/InStock', url: url,
       itemCondition: ldCondition(v.condition),
-      seller: Object.assign({ '@type': 'Organization', name: BRAND, url: SITE + '/vehicles.html' }, fb ? { sameAs: [fb] } : {})
+      seller: Object.assign({ '@type': 'Organization', name: BRAND, url: SITE + '/vehicles.html' }, social.length ? { sameAs: social } : {})
     };
     if (v.district) ld.offers.areaServed = { '@type': 'AdministrativeArea', name: v.district + ', Sri Lanka' };
   }
@@ -223,7 +226,9 @@ function renderPage(v, photos, contact) {
     '<p class="note">You deal through a ' + BRAND + ' agent. Number plates are hidden in photos for the owner\'s privacy. ' +
     'Availability can change — contact us to confirm.</p>\n</section>\n</div>\n</main>\n' +
     '<footer><div class="wrap">© ' + BRAND + ' · Buy · Sell · Lease' +
-      (fb ? ' · <a href="' + esc(fb) + '" target="_blank" rel="noopener">Follow us on Facebook</a>' : '') + '</div></footer>\n' +
+      (fb ? ' · <a href="' + esc(fb) + '" target="_blank" rel="noopener">Facebook</a>' : '') +
+      (ig ? ' · <a href="' + esc(ig) + '" target="_blank" rel="noopener">Instagram</a>' : '') +
+      (tt ? ' · <a href="' + esc(tt) + '" target="_blank" rel="noopener">TikTok</a>' : '') + '</div></footer>\n' +
     (photos.length > 1 ? '<script>(function(){var g=document.getElementById("gal"),c=document.getElementById("gc"),n=' + photos.length + ';' +
       'function idx(){return Math.round(g.scrollLeft/g.clientWidth)}' +
       'function go(d){var i=(idx()+d+n)%n;g.scrollTo({left:i*g.clientWidth,behavior:"smooth"})}' +

@@ -47,7 +47,9 @@ const APP = {
   // Public showroom (vehicles.html): approved vehicles ticked "Show on website" + a Wanted board of buyer needs
   // (no names / phone numbers). The number shown for Call / WhatsApp is the Script Property PUBLIC_PHONE
   // (empty = the first admin's number from the USERS sheet).
-  FACEBOOK_URL: 'https://www.facebook.com/profile.php?id=61593573333056'
+  FACEBOOK_URL: 'https://www.facebook.com/profile.php?id=61593573333056',
+  INSTAGRAM_URL: 'https://www.instagram.com/srilankavehiclehub2026/',
+  TIKTOK_URL: 'https://www.tiktok.com/@vehiclehubsrilanka'
 };
 
 // First admin account, created by setup() when the USERS sheet is empty.
@@ -2057,7 +2059,7 @@ function publicContact_() {
     const a = readAll_('USERS').find(function (u) { return String(u.role) === 'admin' && isTrue_(u.active) && normPhone_(u.phone); });
     phone = a ? normPhone_(a.phone) : '';
   }
-  return { phone: phone, facebook: APP.FACEBOOK_URL };
+  return { phone: phone, facebook: APP.FACEBOOK_URL, instagram: APP.INSTAGRAM_URL, tiktok: APP.TIKTOK_URL };
 }
 
 /** PUBLIC: everything the showroom needs in one call (cached for 2 minutes). */

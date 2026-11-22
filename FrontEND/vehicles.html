@@ -9,7 +9,7 @@
 <meta property="og:description" content="Every ad checked by a VehicleHub agent. Buy · Sell · Lease.">
 <meta property="og:image" content="icon-512.png">
 <meta name="theme-color" content="#1d3f8f">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"Organization","name":"VehicleHub","url":"https://drcjayawardena.github.io/VehicleHUB/vehicles.html","logo":"https://drcjayawardena.github.io/VehicleHUB/icon-512.png","sameAs":["https://www.facebook.com/profile.php?id=61593573333056"]}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"Organization","name":"VehicleHub","url":"https://drcjayawardena.github.io/VehicleHUB/vehicles.html","logo":"https://drcjayawardena.github.io/VehicleHUB/icon-512.png","sameAs":["https://www.facebook.com/profile.php?id=61593573333056","https://www.instagram.com/srilankavehiclehub2026/","https://www.tiktok.com/@vehiclehubsrilanka"]}</script>
 <link rel="icon" href="icon-192.png">
 <link rel="manifest" href="manifest.webmanifest">
 <script src="config.js"></script>
@@ -239,6 +239,8 @@
     <a href="request.html?type=buyer&src=showroom" id="fBuy"></a>
     <a href="#" id="fPhone"></a>
     <a href="#" id="fFb" target="_blank" rel="noopener"></a>
+    <a href="#" id="fIg" target="_blank" rel="noopener"></a>
+    <a href="#" id="fTt" target="_blank" rel="noopener"></a>
     <a href="index.html" id="fAdmin" rel="nofollow"></a>
   </div>
 </div></footer>
@@ -297,6 +299,8 @@
     share: '<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>',
     plus: '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>',
     facebook: '<path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/>',
+    instagram: '<rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/>',
+    tiktok: '<path d="M9 12a4 4 0 1 0 4 4V3c.5 2.6 2.4 4.5 5 5"/>',
     refresh: '<polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>',
     heart: '<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>',
     pin: '<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>',
@@ -334,6 +338,8 @@
   $('fSell').innerHTML = ic('tag') + ' Sell your vehicle';
   $('fBuy').innerHTML = ic('search') + ' Tell us what you want';
   $('fFb').innerHTML = ic('facebook') + ' Facebook';
+  $('fIg').innerHTML = ic('instagram') + ' Instagram'; $('fIg').href = 'https://www.instagram.com/srilankavehiclehub2026/';
+  $('fTt').innerHTML = ic('tiktok') + ' TikTok'; $('fTt').href = 'https://www.tiktok.com/@vehiclehubsrilanka';
   $('fAdmin').innerHTML = ic('shield') + ' Admin login';
 
   // ---------- API ----------
@@ -847,6 +853,8 @@
     S.data = d;
     var c = d.contact || {};
     if (c.facebook) $('fFb').href = c.facebook;
+    if (c.instagram) $('fIg').href = c.instagram;
+    if (c.tiktok) $('fTt').href = c.tiktok;
     if (c.phone) { $('fPhone').href = 'tel:' + c.phone; $('fPhone').innerHTML = ic('phone') + ' ' + esc(c.phone); }
     render();
   }

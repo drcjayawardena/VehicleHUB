@@ -151,6 +151,11 @@
   var state = { type: '', photos: [] };
 
   var FB_PAGE = 'https:/' + '/www.facebook.com/profile.php?id=61593573333056';   // VehicleHub Facebook page
+  var IG_PAGE = 'https:/' + '/www.instagram.com/srilankavehiclehub2026/', TT_PAGE = 'https:/' + '/www.tiktok.com/@vehiclehubsrilanka';
+  function socialRow() {
+    return '<div style="display:flex;gap:8px;margin-top:8px"><a class="btn" style="flex:1" href="' + IG_PAGE + '" target="_blank" rel="noopener">' + ic('instagram') + ' Instagram</a>' +
+      '<a class="btn" style="flex:1" href="' + TT_PAGE + '" target="_blank" rel="noopener">' + ic('tiktok') + ' TikTok</a></div>';
+  }
   var TYPES = ['Car', 'SUV / Jeep', 'Van', 'Cab / Pickup', 'Motorcycle', 'Three Wheeler', 'Lorry', 'Bus'];
   var FUELS = ['Petrol', 'Diesel', 'Hybrid', 'Electric'];
   var GEARS = ['Auto', 'Manual', 'Tiptronic'];
@@ -324,7 +329,9 @@
     send: '<line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>',
     plus: '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>',
     lock: '<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
-    facebook: '<path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/>'
+    facebook: '<path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/>',
+    instagram: '<rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/>',
+    tiktok: '<path d="M9 12a4 4 0 1 0 4 4V3c.5 2.6 2.4 4.5 5 5"/>'
   };
   function ic(n) { return '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">' + (ICONS[n] || '') + '</svg>'; }
 
@@ -338,7 +345,7 @@
       '<button type="button" class="buy" id="c_buy"><span class="badge-ic">' + ic('search') + '</span><span>' + t('buy') + '<small>' + t('buyS') + '</small></span></button>' +
       '<button type="button" class="sell" id="c_sell"><span class="badge-ic">' + ic('car') + '</span><span>' + t('sell') + '<small>' + t('sellS') + '</small></span></button>' +
       '</div><a class="btn" href="vehicles.html" style="width:100%;margin-top:12px">' + ic('car') + ' ' + t('showroom') + '</a>' +
-      '<a class="btn" href="' + FB_PAGE + '" target="_blank" rel="noopener" style="width:100%;margin-top:8px">' + ic('facebook') + ' ' + t('fbFollow') + '</a>' +
+      '<a class="btn" href="' + FB_PAGE + '" target="_blank" rel="noopener" style="width:100%;margin-top:8px">' + ic('facebook') + ' ' + t('fbFollow') + '</a>' + socialRow() +
       '<div class="how"><h2>' + t('howT') + '</h2><ol><li><b>1</b>' + t('how1') + '</li><li><b>2</b>' + t('how2') + '</li><li><b>3</b>' + t('how3') + '</li></ol></div></div>';
     $('c_buy').onclick = function () { state.type = 'buyer'; renderForm(); window.scrollTo(0, 0); };
     $('c_sell').onclick = function () { state.type = 'seller'; renderForm(); window.scrollTo(0, 0); };
@@ -633,7 +640,7 @@
       '<div class="muted">' + t('refL') + '</div><div class="ref">' + esc(d.ref) + '</div>' +
       '<p>' + (o ? esc(t('agent')(o.name)) : t('agentAny')) + '</p>' +
       (wa ? '<a class="btn wa" href="' + wa + '" target="_blank" rel="noopener">' + ic('chat') + ' ' + t('waBtn') + '</a><p class="muted">' + t('waHint') + '</p>' : '') +
-      '<a class="btn" href="' + FB_PAGE + '" target="_blank" rel="noopener" style="margin-top:8px">' + ic('facebook') + ' ' + t('fbFollow') + '</a>' +
+      '<a class="btn" href="' + FB_PAGE + '" target="_blank" rel="noopener" style="margin-top:8px">' + ic('facebook') + ' ' + t('fbFollow') + '</a>' + socialRow() +
       '<button type="button" class="btn" id="d_again" style="margin-top:8px">' + ic('plus') + ' ' + t('again') + '</button></div>';
     $('d_again').onclick = renderStart;
   }

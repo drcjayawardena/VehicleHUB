@@ -70,6 +70,11 @@
   `pages_show_list` (a Page token also works; the code asks the Page for its own token and caches it 1 h); `FB_PAGE_ID` optional
   (default: the id in `APP.FACEBOOK_URL`). Never print or screenshot `FB_TOKEN`. The app only receives `fbReady` (true/false).
 
+## Social links
+- Facebook / Instagram / TikTok: `APP.FACEBOOK_URL`, `APP.INSTAGRAM_URL`, `APP.TIKTOK_URL` (Code.gs, sent to the public pages as
+  `publicListings.contact`) and the `*_URL` constants in both app copies (menu + login), `request.html` (`FB_PAGE`, `IG_PAGE`, `TT_PAGE`),
+  `vehicles.html` (footer + Organization `sameAs`). Change a link in all of these places.
+
 ## WhatsApp (Meta Cloud API, account "VehicleHUB Sri Lanka")
 Script properties (Apps Script → Project Settings). Never print or screenshot `WA_TOKEN`.
 | Property | Meaning |
