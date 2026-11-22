@@ -57,9 +57,9 @@ jobs:
           SITE_URL: ${{ steps.pages.outputs.base_url }}
         run: node scripts/build-vehicle-pages.js
 
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: FrontEND
 
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
