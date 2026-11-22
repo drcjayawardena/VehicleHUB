@@ -852,8 +852,9 @@ async function openAdComposer(vehicleId) {
     <div class="ad-controls"><h3>Create social media ad</h3><label class="muted" for="ad_format">Output format</label>
       <select id="ad_format" onchange="changeAdFormat(this.value)"><option value="feed">Facebook / Instagram / WhatsApp — portrait</option><option value="tiktok">TikTok — vertical, unbranded</option></select>
       <label class="muted" for="ad_photo">Vehicle photo</label><select id="ad_photo"><option>Loading photos…</option></select>
-      <div class="ad-tip">Possible number plates are blurred in the ad image, including older vehicle photos. Review the preview before sharing. Direct publishing needs official account connections and platform approval.</div>
+      <div class="ad-tip">Possible number plates are blurred in the ad image, including older vehicle photos. Review the preview before sharing. Admins can post straight to the Facebook Page (set up in Settings → Facebook Page); for other platforms download the image and post it.</div>
       <button class="btn primary" onclick="downloadVehicleAd()">Download ad image</button><button class="btn green" onclick="shareVehicleAd()">Share ad image</button>
+      ${S.user.role === 'admin' ? `<button class="btn" style="background:#1877f2;color:#fff" onclick="postAdToFacebook(this)">${ic('facebook')} Post to Facebook Page</button>` : ''}
       <label class="muted" for="ad_platform">Caption for</label>
       <select id="ad_platform" onchange="renderAdCaption()"><option value="fb">Facebook</option><option value="ig">Instagram</option><option value="tiktok">TikTok</option><option value="wa">WhatsApp</option></select>
       <label class="muted" for="ad_down">Down payment (Lakhs, optional)</label>
@@ -975,6 +976,36 @@ function vehicleAdCaption(platform) {
 function renderAdCaption() { const t = $('ad_caption'); if (t && AD.vehicle) t.value = vehicleAdCaption(); }
 function currentAdCaption() { const t = $('ad_caption'); return t && t.value.trim() ? t.value : vehicleAdCaption(); }
 async function shareVehicleAd() { try { const b=await vehicleAdBlob(),f=new File([b],'vehiclehub-ad.jpg',{type:'image/jpeg'}); if(navigator.canShare&&navigator.canShare({files:[f]})) await navigator.share({files:[f],title:carName(AD.vehicle),text:currentAdCaption()}); else await downloadVehicleAd(); } catch(e){if(e.name!=='AbortError')toast(e.message,true);} }
+/* ---------- Facebook Page (admin): post the ad image + caption straight to the Page (Facebook.gs) ---------- */
+async function postAdToFacebook(btn) {
+  if (!S.fbReady) return toast('Facebook posting is not set up yet — see Settings → Facebook Page', true);
+  if (AD.format !== 'feed') return toast('Choose the Facebook / Instagram / WhatsApp (portrait) format first', true);
+  if ($('ad_platform') && $('ad_platform').value !== 'fb') { $('ad_platform').value = 'fb'; renderAdCaption(); }
+  const caption = currentAdCaption();
+  if (!confirm('Post this ad image and caption to the VehicleHub Facebook Page now?\n\nCheck the preview: no number plate should be readable.')) return;
+  let image = '';
+  try { image = $('ad_canvas').toDataURL('image/jpeg', 0.9); } catch (e) { return toast('Could not read the ad image', true); }
+  const old = btn.innerHTML; btn.disabled = true; btn.textContent = 'Posting…';
+  const r = await call('postToFacebook', { vehicleId: AD.vehicle.vehicle_id, image, caption });
+  btn.disabled = false; btn.innerHTML = old;
+  if (!r) return;
+  toast('Posted to the Facebook Page');
+  if (r.url) window.open(r.url, '_blank', 'noopener');
+}
+function fbSettingsCard() {
+  return `<div class="card">
+    <h2 style="margin-top:0">${ic('facebook', 'h')} Facebook Page</h2>
+    <p class="muted">${S.fbReady ? 'Posting is set up: use <b>Post to Facebook Page</b> in a vehicle\'s Create Ad window. Every post is listed in the FB_LOG sheet.'
+      : 'Not set up yet. Add the Script property <b>FB_TOKEN</b> (and <b>FB_PAGE_ID</b> if needed) in Apps Script → Project Settings, then reload the app.'}</p>
+    <div class="row"><button type="button" class="btn" onclick="fbCheck(this)">${ic('check')} Test the connection</button></div>
+    <div id="fb_check" class="muted" style="margin-top:8px"></div></div>`;
+}
+async function fbCheck(btn) {
+  btn.disabled = true; $('fb_check').textContent = 'Checking…';
+  const r = await call('fbCheck', {});
+  btn.disabled = false;
+  $('fb_check').innerHTML = r ? `✅ Connected to the Page <b>${esc(r.name)}</b>` : '';
+}
 function copyVehicleCaption() { const t=currentAdCaption(); (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>toast('Caption copied'),()=>prompt('Copy the caption:',t)); }
 async function galDelete(btn) {
   const p = G.photos[G.i];
@@ -1144,10 +1175,10 @@ async function boot() {
   applyInit(r);
 }
 
-const APP_VERSION = '3.8';   // must match APP.VERSION in Code.gs
+const APP_VERSION = '3.9';   // must match APP.VERSION in Code.gs
 
 function applyInit(r) {
-  S.user = r.user; S.lists = r.lists; S.master = r.master; S.formUrl = r.formUrl || '';
+  S.user = r.user; S.lists = r.lists; S.master = r.master; S.formUrl = r.formUrl || ''; S.fbReady = !!r.fbReady;
   renderShell();
   checkVersions(r.versions);
   go('dashboard');
@@ -2164,6 +2195,7 @@ async function saveMatch(id, btn) {
 function viewSettings() {
   setMain(`
     <div class="narrow">
+      ${S.user.role === 'admin' ? fbSettingsCard() : ''}
       <div class="card">
         <h2 style="margin-top:0">${ic('shield', 'h')} My officer profile</h2>
         <p class="muted">Other officers see this name and number when your customers match theirs.</p>

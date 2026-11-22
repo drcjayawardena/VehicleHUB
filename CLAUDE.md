@@ -9,7 +9,7 @@
   Sheet "VehicleHub DB" (the Apps Script is bound to it): https://docs.google.com/spreadsheets/d/1M_eemNHd78aDl0S6TdQdzf77lDdEpoqBZhiRY3BolI0/edit
 - **Local working copy**: `C:\Users\Pentium\Documents\Project\VehicleHUB` (older folders under `Documents\Ravi` are history only).
 - **Backend**: Google Apps Script web app — code in `BackEND/`
-  (`Code.gs`, `Matching.gs`, `McLogin.gs`, `WhatsApp.gs`, `Index.html`, `appsscript.json`).
+  (`Code.gs`, `Matching.gs`, `McLogin.gs`, `WhatsApp.gs`, `Facebook.gs`, `Index.html`, `appsscript.json`).
   Script ID: `1SoG9hIml7sLsYZvprgl_qbkJplVzWbDjmkokt4ctbdcZDGC9Zb_h7N-B` (see `BackEND/.clasp.json`).
 - **Website**: `FrontEND/`, published by `.github/workflows/pages-deploy.yml` (Pages source = GitHub Actions) —
   https://drcjayawardena.github.io/VehicleHUB/
@@ -21,7 +21,7 @@
 ## Deploy pipeline (clasp 2.4.2 via GitHub Actions)
 - Push to `main` touching `BackEND/**` → `.github/workflows/apps-script-deploy.yml` runs `clasp push --force`
   then `clasp deploy` to the **same deployment ID** (the `/exec` URL never changes), then pings `?ping=1`.
-- `clasp push --force` replaces EVERY file in the Apps Script project; the workflow refuses to run if any of the 6 files is missing.
+- `clasp push --force` replaces EVERY file in the Apps Script project; the workflow refuses to run if any of the 7 files is missing.
 - Auth comes from the repo secret `CLASPRC_JSON` (contents of `~/.clasprc.json`, clasp 2.4.2 format:
   `token` / `refresh_token` / `oauth2ClientSettings`). It was regenerated in Google Cloud Shell on 2026-10-29.
 - **Rule**: if anyone edits code in the Apps Script editor, run Actions → "Apps Script — pull live code" first,
@@ -61,6 +61,14 @@
   the officer checks and saves it to the `MARKET` sheet (created automatically), and `scoreMatch_` lists active buyers scoring >= `MIN_SCORE`.
 - **No scraping** of ikman.lk (their terms were not verified). Keep it manual / paste-based unless the owner gets permission or a data feed.
 - UI is in both `BackEND/Index.html` and `FrontEND/index.html` (`viewMarket`, `mk*`).
+
+## Facebook Page posting (v3.9, `Facebook.gs`)
+- Officer app → Vehicles → **Create Ad** → **Post to Facebook Page** (admins only): the browser sends the ad image (canvas JPEG,
+  plates blurred in the preview) + the editable caption (Facebook style, link tagged `src=fb`); `postToFacebook_` posts it with
+  `POST /{page-id}/photos` and logs it in the `FB_LOG` sheet (created automatically). Settings → **Facebook Page** → Test = `fbCheck_`.
+- Script properties: `FB_TOKEN` = System User token (business that owns the Page) with `pages_manage_posts`, `pages_read_engagement`,
+  `pages_show_list` (a Page token also works; the code asks the Page for its own token and caches it 1 h); `FB_PAGE_ID` optional
+  (default: the id in `APP.FACEBOOK_URL`). Never print or screenshot `FB_TOKEN`. The app only receives `fbReady` (true/false).
 
 ## WhatsApp (Meta Cloud API, account "VehicleHUB Sri Lanka")
 Script properties (Apps Script → Project Settings). Never print or screenshot `WA_TOKEN`.
